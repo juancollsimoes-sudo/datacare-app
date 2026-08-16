@@ -3,6 +3,16 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import '../../rust/db/models.dart';
 import 'api_client.dart';
+import 'package:flutter/foundation.dart';
+
+PlatformInt64 _toPlatformInt64(dynamic value) {
+  if (value == null) return (kIsWeb ? BigInt.zero : 0) as PlatformInt64;
+  if (kIsWeb) {
+    return BigInt.parse(value.toString()) as PlatformInt64;
+  } else {
+    return int.parse(value.toString()) as PlatformInt64;
+  }
+}
 
 class WebApiClient implements ApiClient {
   final String baseUrl;
@@ -27,7 +37,7 @@ class WebApiClient implements ApiClient {
       final items = (json['items'] as List).map((item) => _parsePaciente(item)).toList();
       return PaginatedPacientes(
         items: items,
-        total: (json['total'] ?? 0) as PlatformInt64,
+        total: _toPlatformInt64(json['total'] ?? 0),
         page: json['page'] ?? page,
         pageSize: json['pageSize'] ?? pageSize,
       );
@@ -71,7 +81,7 @@ class WebApiClient implements ApiClient {
 
     if (response.statusCode == 201 || response.statusCode == 200) {
       final json = jsonDecode(response.body);
-      return (json['id'] ?? 0) as PlatformInt64;
+      return _toPlatformInt64(json['id'] ?? 0);
     } else {
       throw Exception('Failed to create paciente');
     }
@@ -128,7 +138,7 @@ class WebApiClient implements ApiClient {
     );
     if (response.statusCode == 201 || response.statusCode == 200) {
       final json = jsonDecode(response.body);
-      return (json['id'] ?? 0) as PlatformInt64;
+      return _toPlatformInt64(json['id'] ?? 0);
     }
     throw Exception('Failed to create tratamiento');
   }
@@ -183,7 +193,7 @@ class WebApiClient implements ApiClient {
     );
     if (response.statusCode == 201 || response.statusCode == 200) {
       final json = jsonDecode(response.body);
-      return (json['id'] ?? 0) as PlatformInt64;
+      return _toPlatformInt64(json['id'] ?? 0);
     }
     throw Exception('Failed to create sesion');
   }
@@ -205,7 +215,7 @@ class WebApiClient implements ApiClient {
       final items = (json['items'] as List).map((item) => _parseSesion(item)).toList();
       return PaginatedSesiones(
         items: items,
-        total: (json['total'] ?? 0) as PlatformInt64,
+        total: _toPlatformInt64(json['total'] ?? 0),
         page: json['page'] ?? page,
         pageSize: json['pageSize'] ?? pageSize,
       );
@@ -317,7 +327,7 @@ class WebApiClient implements ApiClient {
 
   Paciente _parsePaciente(Map<String, dynamic> json) {
     return Paciente(
-      id: json['id'] as PlatformInt64,
+      id: _toPlatformInt64(json['id']),
       nombre: json['nombre'],
       apellido: json['apellido'],
       fechaNacimiento: json['fechaNacimiento'],
@@ -334,10 +344,10 @@ class WebApiClient implements ApiClient {
 
   Tratamiento _parseTratamiento(Map<String, dynamic> json) {
     return Tratamiento(
-      id: json['id'] as PlatformInt64,
+      id: _toPlatformInt64(json['id']),
       nombre: json['nombre'],
       descripcion: json['descripcion'],
-      duracionMin: json['duracionMin'] != null ? json['duracionMin'] as PlatformInt64 : null,
+      duracionMin: json['duracionMin'] != null ? _toPlatformInt64(json['duracionMin']) : null,
       precio: (json['precio'] as num?)?.toDouble(),
       activo: json['activo'] ?? true,
     );
@@ -345,9 +355,9 @@ class WebApiClient implements ApiClient {
 
   Sesion _parseSesion(Map<String, dynamic> json) {
     return Sesion(
-      id: json['id'] as PlatformInt64,
-      pacienteId: json['pacienteId'] as PlatformInt64,
-      tratamientoId: json['tratamientoId'] != null ? json['tratamientoId'] as PlatformInt64 : null,
+      id: _toPlatformInt64(json['id']),
+      pacienteId: _toPlatformInt64(json['pacienteId']),
+      tratamientoId: json['tratamientoId'] != null ? _toPlatformInt64(json['tratamientoId']) : null,
       fecha: json['fecha'],
       notasSesion: json['notasSesion'],
       observaciones: json['observaciones'],
@@ -360,16 +370,16 @@ class WebApiClient implements ApiClient {
 
   DashboardStats _parseDashboardStats(Map<String, dynamic> json) {
     return DashboardStats(
-      totalPacientesActivos: (json['totalPacientesActivos'] ?? 0) as PlatformInt64,
-      sesionesEsteMes: (json['sesionesEsteMes'] ?? 0) as PlatformInt64,
-      tratamientosRegistrados: (json['tratamientosRegistrados'] ?? 0) as PlatformInt64,
+      totalPacientesActivos: _toPlatformInt64(json['totalPacientesActivos'] ?? 0),
+      sesionesEsteMes: _toPlatformInt64(json['sesionesEsteMes'] ?? 0),
+      tratamientosRegistrados: _toPlatformInt64(json['tratamientosRegistrados'] ?? 0),
     );
   }
 
   FotoSesion _parseFotoSesion(Map<String, dynamic> json) {
     return FotoSesion(
-      id: json['id'] as PlatformInt64,
-      sesionId: json['sesionId'] as PlatformInt64,
+      id: _toPlatformInt64(json['id']),
+      sesionId: _toPlatformInt64(json['sesionId']),
       rutaFoto: json['rutaFoto'],
       rutaThumb: json['rutaThumb'],
       tipo: json['tipo'],

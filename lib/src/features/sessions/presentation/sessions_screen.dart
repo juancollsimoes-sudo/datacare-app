@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:datacare/src/rust/api/db_api.dart';
+
+import 'package:datacare/src/core/api/api_provider.dart';
 import 'package:datacare/src/rust/db/models.dart';
 
 final allSessionsProvider = FutureProvider<Map<DateTime, List<Sesion>>>((ref) async {
-  final patientsResult = await listPacientes(page: 1, pageSize: 1000);
+  final api = ref.read(apiClientProvider);
+  final patientsResult = await api.listPacientes(page: 1, pageSize: 1000);
   Map<DateTime, List<Sesion>> sessionsMap = {};
 
   for (var patient in patientsResult.items) {
-    final sessionsResult = await listSesionesByPaciente(pacienteId: patient.id, page: 1, pageSize: 1000);
+    final sessionsResult = await api.listSesionesByPaciente(pacienteId: patient.id, page: 1, pageSize: 1000);
     for (var session in sessionsResult.items) {
       try {
         DateTime date = DateTime.parse(session.fecha);

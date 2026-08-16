@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:datacare/src/rust/api/backup_api.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
@@ -15,6 +16,15 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   bool _isLoading = false;
 
   Future<void> _createBackup() async {
+    if (kIsWeb) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Los backups no están disponibles en la versión web')),
+        );
+      }
+      return;
+    }
+
     final outputDir = await FilePicker.getDirectoryPath(
       dialogTitle: 'Seleccionar Carpeta para Copia de Seguridad',
     );
@@ -43,6 +53,15 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   }
 
   Future<void> _restoreBackup() async {
+    if (kIsWeb) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('La restauración no está disponible en la versión web')),
+        );
+      }
+      return;
+    }
+
     final result = await FilePicker.pickFiles(
       dialogTitle: 'Seleccionar Copia de Seguridad',
       type: FileType.custom,

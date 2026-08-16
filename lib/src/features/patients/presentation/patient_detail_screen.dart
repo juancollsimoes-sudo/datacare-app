@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
@@ -43,6 +44,15 @@ class PatientDetailScreen extends ConsumerWidget {
                 );
                 
                 if (result != null) {
+                  if (kIsWeb) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Los reportes no están disponibles en la versión web')),
+                      );
+                    }
+                    return;
+                  }
+
                   await apiGeneratePatientReport(pacienteId: patientId, outputPath: result.toFilePath());
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,13 +1,16 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:datacare/src/rust/api/db_api.dart';
+
 import 'package:datacare/src/rust/api/pdf_api.dart';
 import 'package:datacare/src/rust/db/models.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:datacare/src/core/api/api_provider.dart';
 
 final patientsReportProvider = FutureProvider<List<Paciente>>((ref) async {
-  final result = await listPacientes(page: 1, pageSize: 1000);
+  final api = ref.read(apiClientProvider);
+  final result = await api.listPacientes(page: 1, pageSize: 1000);
   return result.items;
 });
 
@@ -37,6 +40,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
       if (outputFileUri != null) {
         final outputPath = outputFileUri.toFilePath();
+        if (kIsWeb) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Los reportes no están disponibles en la versión web')),
+            );
+          }
+          return;
+        }
+
         await apiGeneratePatientReport(
           pacienteId: _selectedPatient!.id,
           outputPath: outputPath,

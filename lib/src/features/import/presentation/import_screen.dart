@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import '../../../rust/api/import_api.dart';
 
 class ImportScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,15 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
 
       if (result.isEmpty || result.first.path == null) {
         return; // User canceled
+      }
+
+      if (kIsWeb) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('La importación no está disponible en la versión web')),
+          );
+        }
+        return;
       }
 
       setState(() {
