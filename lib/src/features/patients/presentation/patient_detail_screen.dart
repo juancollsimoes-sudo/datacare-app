@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import 'package:file_picker/file_picker.dart' as file_picker;
+import '../../../rust/api/pdf_api.dart';
 import '../providers/patients_providers.dart';
 import '../../sessions/providers/sessions_providers.dart';
 import '../../../rust/db/models.dart';
@@ -25,6 +27,35 @@ class PatientDetailScreen extends ConsumerWidget {
           onPressed: () => context.go('/patients'),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Exportar a PDF',
+            onPressed: () async {
+              try {
+                final result = await file_picker.FilePicker.platform.saveFile(
+                  dialogTitle: 'Guardar reporte',
+                  fileName: 'reporte_paciente_$id.pdf',
+                  allowedExtensions: ['pdf'],
+                  type: file_picker.FileType.custom,
+                );
+                
+                if (result != null) {
+                  await api_generate_patient_report(pacienteId: patientId, outputPath: result);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('PDF generado exitosamente')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al generar PDF: $e')),
+                  );
+                }
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: 'Editar',

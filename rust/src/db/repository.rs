@@ -369,3 +369,20 @@ impl FotoRepo {
         Ok(())
     }
 }
+
+// --- IMPORTACIONES ---
+pub struct ImportacionRepo;
+
+impl ImportacionRepo {
+    pub fn crear(conn: &Connection, i: &NuevaImportacion) -> Result<i64, AppError> {
+        conn.execute(
+            "INSERT INTO importaciones (
+                archivo_origen, filas_ok, filas_warning, filas_error, log_detalle
+            ) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                i.archivo_origen, i.filas_ok, i.filas_warning, i.filas_error, i.log_detalle
+            ],
+        )?;
+        Ok(conn.last_insert_rowid())
+    }
+}

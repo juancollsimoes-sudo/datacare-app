@@ -145,3 +145,12 @@ pub struct PaginatedSesiones {
     pub page: i32,
     pub page_size: i32,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NuevaImportacion {
+    pub archivo_origen: String,
+    pub filas_ok: i64,
+    pub filas_warning: i64,
+    pub filas_error: i64,
+    pub log_detalle: Option<String>,
+}
