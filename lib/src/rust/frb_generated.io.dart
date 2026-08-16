@@ -3,10 +3,12 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/db_api.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi' as ffi;
+import 'db/models.dart';
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_io.dart';
 
@@ -22,7 +24,108 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  ActualizarPaciente dco_decode_actualizar_paciente(dynamic raw);
+
+  @protected
+  ActualizarSesion dco_decode_actualizar_sesion(dynamic raw);
+
+  @protected
+  ActualizarTratamiento dco_decode_actualizar_tratamiento(dynamic raw);
+
+  @protected
+  bool dco_decode_bool(dynamic raw);
+
+  @protected
+  ActualizarPaciente dco_decode_box_autoadd_actualizar_paciente(dynamic raw);
+
+  @protected
+  ActualizarSesion dco_decode_box_autoadd_actualizar_sesion(dynamic raw);
+
+  @protected
+  ActualizarTratamiento dco_decode_box_autoadd_actualizar_tratamiento(
+    dynamic raw,
+  );
+
+  @protected
+  double dco_decode_box_autoadd_f_64(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  NuevaSesion dco_decode_box_autoadd_nueva_sesion(dynamic raw);
+
+  @protected
+  NuevoPaciente dco_decode_box_autoadd_nuevo_paciente(dynamic raw);
+
+  @protected
+  NuevoTratamiento dco_decode_box_autoadd_nuevo_tratamiento(dynamic raw);
+
+  @protected
+  Paciente dco_decode_box_autoadd_paciente(dynamic raw);
+
+  @protected
+  Sesion dco_decode_box_autoadd_sesion(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
+
+  @protected
+  int dco_decode_i_32(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  List<Paciente> dco_decode_list_paciente(dynamic raw);
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  List<Sesion> dco_decode_list_sesion(dynamic raw);
+
+  @protected
+  List<Tratamiento> dco_decode_list_tratamiento(dynamic raw);
+
+  @protected
+  NuevaSesion dco_decode_nueva_sesion(dynamic raw);
+
+  @protected
+  NuevoPaciente dco_decode_nuevo_paciente(dynamic raw);
+
+  @protected
+  NuevoTratamiento dco_decode_nuevo_tratamiento(dynamic raw);
+
+  @protected
+  String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
+
+  @protected
+  PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  Paciente? dco_decode_opt_box_autoadd_paciente(dynamic raw);
+
+  @protected
+  Sesion? dco_decode_opt_box_autoadd_sesion(dynamic raw);
+
+  @protected
+  Paciente dco_decode_paciente(dynamic raw);
+
+  @protected
+  PaginatedPacientes dco_decode_paginated_pacientes(dynamic raw);
+
+  @protected
+  PaginatedSesiones dco_decode_paginated_sesiones(dynamic raw);
+
+  @protected
+  Sesion dco_decode_sesion(dynamic raw);
+
+  @protected
+  Tratamiento dco_decode_tratamiento(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -34,7 +137,122 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  ActualizarPaciente sse_decode_actualizar_paciente(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ActualizarSesion sse_decode_actualizar_sesion(SseDeserializer deserializer);
+
+  @protected
+  ActualizarTratamiento sse_decode_actualizar_tratamiento(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  ActualizarPaciente sse_decode_box_autoadd_actualizar_paciente(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ActualizarSesion sse_decode_box_autoadd_actualizar_sesion(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ActualizarTratamiento sse_decode_box_autoadd_actualizar_tratamiento(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  NuevaSesion sse_decode_box_autoadd_nueva_sesion(SseDeserializer deserializer);
+
+  @protected
+  NuevoPaciente sse_decode_box_autoadd_nuevo_paciente(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  NuevoTratamiento sse_decode_box_autoadd_nuevo_tratamiento(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Paciente sse_decode_box_autoadd_paciente(SseDeserializer deserializer);
+
+  @protected
+  Sesion sse_decode_box_autoadd_sesion(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+
+  @protected
+  List<Paciente> sse_decode_list_paciente(SseDeserializer deserializer);
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  List<Sesion> sse_decode_list_sesion(SseDeserializer deserializer);
+
+  @protected
+  List<Tratamiento> sse_decode_list_tratamiento(SseDeserializer deserializer);
+
+  @protected
+  NuevaSesion sse_decode_nueva_sesion(SseDeserializer deserializer);
+
+  @protected
+  NuevoPaciente sse_decode_nuevo_paciente(SseDeserializer deserializer);
+
+  @protected
+  NuevoTratamiento sse_decode_nuevo_tratamiento(SseDeserializer deserializer);
+
+  @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  Paciente? sse_decode_opt_box_autoadd_paciente(SseDeserializer deserializer);
+
+  @protected
+  Sesion? sse_decode_opt_box_autoadd_sesion(SseDeserializer deserializer);
+
+  @protected
+  Paciente sse_decode_paciente(SseDeserializer deserializer);
+
+  @protected
+  PaginatedPacientes sse_decode_paginated_pacientes(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PaginatedSesiones sse_decode_paginated_sesiones(SseDeserializer deserializer);
+
+  @protected
+  Sesion sse_decode_sesion(SseDeserializer deserializer);
+
+  @protected
+  Tratamiento sse_decode_tratamiento(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -43,13 +261,91 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_decode_unit(SseDeserializer deserializer);
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer);
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer);
-
-  @protected
   void sse_encode_String(String self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_actualizar_paciente(
+    ActualizarPaciente self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_actualizar_sesion(
+    ActualizarSesion self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_actualizar_tratamiento(
+    ActualizarTratamiento self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_actualizar_paciente(
+    ActualizarPaciente self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_actualizar_sesion(
+    ActualizarSesion self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_actualizar_tratamiento(
+    ActualizarTratamiento self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_i_64(
+    PlatformInt64 self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_nueva_sesion(
+    NuevaSesion self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_nuevo_paciente(
+    NuevoPaciente self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_nuevo_tratamiento(
+    NuevoTratamiento self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_paciente(Paciente self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_sesion(Sesion self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_paciente(List<Paciente> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -58,16 +354,76 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_sesion(List<Sesion> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_tratamiento(
+    List<Tratamiento> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_nueva_sesion(NuevaSesion self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_nuevo_paciente(NuevoPaciente self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_nuevo_tratamiento(
+    NuevoTratamiento self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_64(
+    PlatformInt64? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_paciente(
+    Paciente? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_sesion(
+    Sesion? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_paciente(Paciente self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_paginated_pacientes(
+    PaginatedPacientes self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_paginated_sesiones(
+    PaginatedSesiones self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_sesion(Sesion self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_tratamiento(Tratamiento self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_unit(void self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer);
 }
 
 // Section: wire_class

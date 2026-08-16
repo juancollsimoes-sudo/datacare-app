@@ -1,70 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:datacare/src/rust/api/simple.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:system_theme/system_theme.dart';
+import 'src/core/router/app_router.dart';
+import 'src/core/theme/app_theme.dart';
+import 'src/core/constants/app_constants.dart';
 
-class DataCareApp extends StatelessWidget {
+class DataCareApp extends ConsumerWidget {
   const DataCareApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DataCare',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: HelloWorldWidget(),
-        ),
-      ),
-    );
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
 
-class HelloWorldWidget extends StatefulWidget {
-  const HelloWorldWidget({super.key});
-
-  @override
-  State<HelloWorldWidget> createState() => _HelloWorldWidgetState();
-}
-
-class _HelloWorldWidgetState extends State<HelloWorldWidget> {
-  String _greeting = 'Waiting for Rust...';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadGreeting();
-  }
-
-  void _loadGreeting() {
-    try {
-      final greeting = greet(name: 'DataCare User');
-      setState(() {
-        _greeting = greeting;
-      });
-    } catch (e) {
-      setState(() {
-        _greeting = 'Error: $e';
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          _greeting,
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: _loadGreeting,
-          child: const Text('Refresh Greeting'),
-        ),
-      ],
+    return SystemThemeBuilder(
+      builder: (context, accent) {
+        return MaterialApp.router(
+          title: AppConstants.appName,
+          theme: AppTheme.getLightTheme(accent.accent),
+          darkTheme: AppTheme.getDarkTheme(accent.accent),
+          themeMode: ThemeMode.system,
+          routerConfig: router,
+        );
+      },
     );
   }
 }

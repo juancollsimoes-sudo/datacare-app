@@ -3,9 +3,11 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/db_api.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'db/models.dart';
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
@@ -66,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -1918914929;
+  int get rustContentHash => 2027713919;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -78,9 +80,53 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<PlatformInt64> crateApiDbApiCreatePaciente({
+    required NuevoPaciente paciente,
+  });
+
+  Future<PlatformInt64> crateApiDbApiCreateSesion({
+    required NuevaSesion sesion,
+  });
+
+  Future<PlatformInt64> crateApiDbApiCreateTratamiento({
+    required NuevoTratamiento tratamiento,
+  });
+
+  Future<void> crateApiDbApiDeactivatePaciente({required PlatformInt64 id});
+
+  Future<Paciente?> crateApiDbApiGetPaciente({required PlatformInt64 id});
+
+  Future<Sesion?> crateApiDbApiGetSesion({required PlatformInt64 id});
+
   String crateApiSimpleGreet({required String name});
 
   Future<void> crateApiSimpleInitApp();
+
+  Future<void> crateApiDbApiInitDatabase({required String dbPath});
+
+  Future<PaginatedPacientes> crateApiDbApiListPacientes({
+    String? search,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<PaginatedSesiones> crateApiDbApiListSesionesByPaciente({
+    required PlatformInt64 pacienteId,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<List<Tratamiento>> crateApiDbApiListTratamientos();
+
+  Future<void> crateApiDbApiUpdatePaciente({
+    required ActualizarPaciente paciente,
+  });
+
+  Future<void> crateApiDbApiUpdateSesion({required ActualizarSesion sesion});
+
+  Future<void> crateApiDbApiUpdateTratamiento({
+    required ActualizarTratamiento tratamiento,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -92,13 +138,190 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  Future<PlatformInt64> crateApiDbApiCreatePaciente({
+    required NuevoPaciente paciente,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_nuevo_paciente(paciente, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_i_64,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiCreatePacienteConstMeta,
+        argValues: [paciente],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiCreatePacienteConstMeta =>
+      const TaskConstMeta(debugName: "create_paciente", argNames: ["paciente"]);
+
+  @override
+  Future<PlatformInt64> crateApiDbApiCreateSesion({
+    required NuevaSesion sesion,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_nueva_sesion(sesion, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_i_64,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiCreateSesionConstMeta,
+        argValues: [sesion],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiCreateSesionConstMeta =>
+      const TaskConstMeta(debugName: "create_sesion", argNames: ["sesion"]);
+
+  @override
+  Future<PlatformInt64> crateApiDbApiCreateTratamiento({
+    required NuevoTratamiento tratamiento,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_nuevo_tratamiento(tratamiento, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_i_64,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiCreateTratamientoConstMeta,
+        argValues: [tratamiento],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiCreateTratamientoConstMeta =>
+      const TaskConstMeta(
+        debugName: "create_tratamiento",
+        argNames: ["tratamiento"],
+      );
+
+  @override
+  Future<void> crateApiDbApiDeactivatePaciente({required PlatformInt64 id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiDeactivatePacienteConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiDeactivatePacienteConstMeta =>
+      const TaskConstMeta(debugName: "deactivate_paciente", argNames: ["id"]);
+
+  @override
+  Future<Paciente?> crateApiDbApiGetPaciente({required PlatformInt64 id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_paciente,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiGetPacienteConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiGetPacienteConstMeta =>
+      const TaskConstMeta(debugName: "get_paciente", argNames: ["id"]);
+
+  @override
+  Future<Sesion?> crateApiDbApiGetSesion({required PlatformInt64 id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 6,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_sesion,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiGetSesionConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiGetSesionConstMeta =>
+      const TaskConstMeta(debugName: "get_sesion", argNames: ["id"]);
+
+  @override
   String crateApiSimpleGreet({required String name}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -123,7 +346,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 8,
             port: port_,
           );
         },
@@ -141,6 +364,228 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSimpleInitAppConstMeta =>
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
+  @override
+  Future<void> crateApiDbApiInitDatabase({required String dbPath}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(dbPath, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 9,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiInitDatabaseConstMeta,
+        argValues: [dbPath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiInitDatabaseConstMeta =>
+      const TaskConstMeta(debugName: "init_database", argNames: ["dbPath"]);
+
+  @override
+  Future<PaginatedPacientes> crateApiDbApiListPacientes({
+    String? search,
+    required int page,
+    required int pageSize,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_opt_String(search, serializer);
+          sse_encode_i_32(page, serializer);
+          sse_encode_i_32(pageSize, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 10,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_paginated_pacientes,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiListPacientesConstMeta,
+        argValues: [search, page, pageSize],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiListPacientesConstMeta => const TaskConstMeta(
+    debugName: "list_pacientes",
+    argNames: ["search", "page", "pageSize"],
+  );
+
+  @override
+  Future<PaginatedSesiones> crateApiDbApiListSesionesByPaciente({
+    required PlatformInt64 pacienteId,
+    required int page,
+    required int pageSize,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(pacienteId, serializer);
+          sse_encode_i_32(page, serializer);
+          sse_encode_i_32(pageSize, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_paginated_sesiones,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiListSesionesByPacienteConstMeta,
+        argValues: [pacienteId, page, pageSize],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiListSesionesByPacienteConstMeta =>
+      const TaskConstMeta(
+        debugName: "list_sesiones_by_paciente",
+        argNames: ["pacienteId", "page", "pageSize"],
+      );
+
+  @override
+  Future<List<Tratamiento>> crateApiDbApiListTratamientos() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_tratamiento,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiListTratamientosConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiListTratamientosConstMeta =>
+      const TaskConstMeta(debugName: "list_tratamientos", argNames: []);
+
+  @override
+  Future<void> crateApiDbApiUpdatePaciente({
+    required ActualizarPaciente paciente,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_actualizar_paciente(paciente, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 13,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiUpdatePacienteConstMeta,
+        argValues: [paciente],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiUpdatePacienteConstMeta =>
+      const TaskConstMeta(debugName: "update_paciente", argNames: ["paciente"]);
+
+  @override
+  Future<void> crateApiDbApiUpdateSesion({required ActualizarSesion sesion}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_actualizar_sesion(sesion, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 14,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiUpdateSesionConstMeta,
+        argValues: [sesion],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiUpdateSesionConstMeta =>
+      const TaskConstMeta(debugName: "update_sesion", argNames: ["sesion"]);
+
+  @override
+  Future<void> crateApiDbApiUpdateTratamiento({
+    required ActualizarTratamiento tratamiento,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_actualizar_tratamiento(
+            tratamiento,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiDbApiUpdateTratamientoConstMeta,
+        argValues: [tratamiento],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDbApiUpdateTratamientoConstMeta =>
+      const TaskConstMeta(
+        debugName: "update_tratamiento",
+        argNames: ["tratamiento"],
+      );
+
   @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -148,9 +593,333 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ActualizarPaciente dco_decode_actualizar_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
+    return ActualizarPaciente(
+      id: dco_decode_i_64(arr[0]),
+      nombre: dco_decode_String(arr[1]),
+      apellido: dco_decode_String(arr[2]),
+      fechaNacimiento: dco_decode_opt_String(arr[3]),
+      telefono: dco_decode_opt_String(arr[4]),
+      email: dco_decode_opt_String(arr[5]),
+      direccion: dco_decode_opt_String(arr[6]),
+      notasGenerales: dco_decode_opt_String(arr[7]),
+      alergias: dco_decode_opt_String(arr[8]),
+      condicionesMedicas: dco_decode_opt_String(arr[9]),
+    );
+  }
+
+  @protected
+  ActualizarSesion dco_decode_actualizar_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return ActualizarSesion(
+      id: dco_decode_i_64(arr[0]),
+      tratamientoId: dco_decode_opt_box_autoadd_i_64(arr[1]),
+      fecha: dco_decode_String(arr[2]),
+      notasSesion: dco_decode_opt_String(arr[3]),
+      observaciones: dco_decode_opt_String(arr[4]),
+      productosUsados: dco_decode_opt_String(arr[5]),
+      precioCobrado: dco_decode_opt_box_autoadd_f_64(arr[6]),
+      pagado: dco_decode_bool(arr[7]),
+    );
+  }
+
+  @protected
+  ActualizarTratamiento dco_decode_actualizar_tratamiento(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return ActualizarTratamiento(
+      id: dco_decode_i_64(arr[0]),
+      nombre: dco_decode_String(arr[1]),
+      descripcion: dco_decode_opt_String(arr[2]),
+      duracionMin: dco_decode_opt_box_autoadd_i_64(arr[3]),
+      precio: dco_decode_opt_box_autoadd_f_64(arr[4]),
+    );
+  }
+
+  @protected
+  bool dco_decode_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as bool;
+  }
+
+  @protected
+  ActualizarPaciente dco_decode_box_autoadd_actualizar_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_actualizar_paciente(raw);
+  }
+
+  @protected
+  ActualizarSesion dco_decode_box_autoadd_actualizar_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_actualizar_sesion(raw);
+  }
+
+  @protected
+  ActualizarTratamiento dco_decode_box_autoadd_actualizar_tratamiento(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_actualizar_tratamiento(raw);
+  }
+
+  @protected
+  double dco_decode_box_autoadd_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_i_64(raw);
+  }
+
+  @protected
+  NuevaSesion dco_decode_box_autoadd_nueva_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_nueva_sesion(raw);
+  }
+
+  @protected
+  NuevoPaciente dco_decode_box_autoadd_nuevo_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_nuevo_paciente(raw);
+  }
+
+  @protected
+  NuevoTratamiento dco_decode_box_autoadd_nuevo_tratamiento(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_nuevo_tratamiento(raw);
+  }
+
+  @protected
+  Paciente dco_decode_box_autoadd_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_paciente(raw);
+  }
+
+  @protected
+  Sesion dco_decode_box_autoadd_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_sesion(raw);
+  }
+
+  @protected
+  double dco_decode_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  int dco_decode_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeI64(raw);
+  }
+
+  @protected
+  List<Paciente> dco_decode_list_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_paciente).toList();
+  }
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  List<Sesion> dco_decode_list_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_sesion).toList();
+  }
+
+  @protected
+  List<Tratamiento> dco_decode_list_tratamiento(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_tratamiento).toList();
+  }
+
+  @protected
+  NuevaSesion dco_decode_nueva_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return NuevaSesion(
+      pacienteId: dco_decode_i_64(arr[0]),
+      tratamientoId: dco_decode_opt_box_autoadd_i_64(arr[1]),
+      fecha: dco_decode_String(arr[2]),
+      notasSesion: dco_decode_opt_String(arr[3]),
+      observaciones: dco_decode_opt_String(arr[4]),
+      productosUsados: dco_decode_opt_String(arr[5]),
+      precioCobrado: dco_decode_opt_box_autoadd_f_64(arr[6]),
+      pagado: dco_decode_bool(arr[7]),
+    );
+  }
+
+  @protected
+  NuevoPaciente dco_decode_nuevo_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    return NuevoPaciente(
+      nombre: dco_decode_String(arr[0]),
+      apellido: dco_decode_String(arr[1]),
+      fechaNacimiento: dco_decode_opt_String(arr[2]),
+      telefono: dco_decode_opt_String(arr[3]),
+      email: dco_decode_opt_String(arr[4]),
+      direccion: dco_decode_opt_String(arr[5]),
+      notasGenerales: dco_decode_opt_String(arr[6]),
+      alergias: dco_decode_opt_String(arr[7]),
+      condicionesMedicas: dco_decode_opt_String(arr[8]),
+    );
+  }
+
+  @protected
+  NuevoTratamiento dco_decode_nuevo_tratamiento(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return NuevoTratamiento(
+      nombre: dco_decode_String(arr[0]),
+      descripcion: dco_decode_opt_String(arr[1]),
+      duracionMin: dco_decode_opt_box_autoadd_i_64(arr[2]),
+      precio: dco_decode_opt_box_autoadd_f_64(arr[3]),
+    );
+  }
+
+  @protected
+  String? dco_decode_opt_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  double? dco_decode_opt_box_autoadd_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_f_64(raw);
+  }
+
+  @protected
+  PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_i_64(raw);
+  }
+
+  @protected
+  Paciente? dco_decode_opt_box_autoadd_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_paciente(raw);
+  }
+
+  @protected
+  Sesion? dco_decode_opt_box_autoadd_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_sesion(raw);
+  }
+
+  @protected
+  Paciente dco_decode_paciente(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 12)
+      throw Exception('unexpected arr length: expect 12 but see ${arr.length}');
+    return Paciente(
+      id: dco_decode_i_64(arr[0]),
+      nombre: dco_decode_String(arr[1]),
+      apellido: dco_decode_String(arr[2]),
+      fechaNacimiento: dco_decode_opt_String(arr[3]),
+      telefono: dco_decode_opt_String(arr[4]),
+      email: dco_decode_opt_String(arr[5]),
+      direccion: dco_decode_opt_String(arr[6]),
+      notasGenerales: dco_decode_opt_String(arr[7]),
+      alergias: dco_decode_opt_String(arr[8]),
+      condicionesMedicas: dco_decode_opt_String(arr[9]),
+      fechaRegistro: dco_decode_String(arr[10]),
+      activo: dco_decode_bool(arr[11]),
+    );
+  }
+
+  @protected
+  PaginatedPacientes dco_decode_paginated_pacientes(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return PaginatedPacientes(
+      items: dco_decode_list_paciente(arr[0]),
+      total: dco_decode_i_64(arr[1]),
+      page: dco_decode_i_32(arr[2]),
+      pageSize: dco_decode_i_32(arr[3]),
+    );
+  }
+
+  @protected
+  PaginatedSesiones dco_decode_paginated_sesiones(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return PaginatedSesiones(
+      items: dco_decode_list_sesion(arr[0]),
+      total: dco_decode_i_64(arr[1]),
+      page: dco_decode_i_32(arr[2]),
+      pageSize: dco_decode_i_32(arr[3]),
+    );
+  }
+
+  @protected
+  Sesion dco_decode_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
+    return Sesion(
+      id: dco_decode_i_64(arr[0]),
+      pacienteId: dco_decode_i_64(arr[1]),
+      tratamientoId: dco_decode_opt_box_autoadd_i_64(arr[2]),
+      fecha: dco_decode_String(arr[3]),
+      notasSesion: dco_decode_opt_String(arr[4]),
+      observaciones: dco_decode_opt_String(arr[5]),
+      productosUsados: dco_decode_opt_String(arr[6]),
+      precioCobrado: dco_decode_opt_box_autoadd_f_64(arr[7]),
+      pagado: dco_decode_bool(arr[8]),
+      createdAt: dco_decode_String(arr[9]),
+    );
+  }
+
+  @protected
+  Tratamiento dco_decode_tratamiento(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return Tratamiento(
+      id: dco_decode_i_64(arr[0]),
+      nombre: dco_decode_String(arr[1]),
+      descripcion: dco_decode_opt_String(arr[2]),
+      duracionMin: dco_decode_opt_box_autoadd_i_64(arr[3]),
+      precio: dco_decode_opt_box_autoadd_f_64(arr[4]),
+      activo: dco_decode_bool(arr[5]),
+    );
   }
 
   @protected
@@ -173,10 +942,442 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ActualizarPaciente sse_decode_actualizar_paciente(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_nombre = sse_decode_String(deserializer);
+    var var_apellido = sse_decode_String(deserializer);
+    var var_fechaNacimiento = sse_decode_opt_String(deserializer);
+    var var_telefono = sse_decode_opt_String(deserializer);
+    var var_email = sse_decode_opt_String(deserializer);
+    var var_direccion = sse_decode_opt_String(deserializer);
+    var var_notasGenerales = sse_decode_opt_String(deserializer);
+    var var_alergias = sse_decode_opt_String(deserializer);
+    var var_condicionesMedicas = sse_decode_opt_String(deserializer);
+    return ActualizarPaciente(
+      id: var_id,
+      nombre: var_nombre,
+      apellido: var_apellido,
+      fechaNacimiento: var_fechaNacimiento,
+      telefono: var_telefono,
+      email: var_email,
+      direccion: var_direccion,
+      notasGenerales: var_notasGenerales,
+      alergias: var_alergias,
+      condicionesMedicas: var_condicionesMedicas,
+    );
+  }
+
+  @protected
+  ActualizarSesion sse_decode_actualizar_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_tratamientoId = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_fecha = sse_decode_String(deserializer);
+    var var_notasSesion = sse_decode_opt_String(deserializer);
+    var var_observaciones = sse_decode_opt_String(deserializer);
+    var var_productosUsados = sse_decode_opt_String(deserializer);
+    var var_precioCobrado = sse_decode_opt_box_autoadd_f_64(deserializer);
+    var var_pagado = sse_decode_bool(deserializer);
+    return ActualizarSesion(
+      id: var_id,
+      tratamientoId: var_tratamientoId,
+      fecha: var_fecha,
+      notasSesion: var_notasSesion,
+      observaciones: var_observaciones,
+      productosUsados: var_productosUsados,
+      precioCobrado: var_precioCobrado,
+      pagado: var_pagado,
+    );
+  }
+
+  @protected
+  ActualizarTratamiento sse_decode_actualizar_tratamiento(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_nombre = sse_decode_String(deserializer);
+    var var_descripcion = sse_decode_opt_String(deserializer);
+    var var_duracionMin = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_precio = sse_decode_opt_box_autoadd_f_64(deserializer);
+    return ActualizarTratamiento(
+      id: var_id,
+      nombre: var_nombre,
+      descripcion: var_descripcion,
+      duracionMin: var_duracionMin,
+      precio: var_precio,
+    );
+  }
+
+  @protected
+  bool sse_decode_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  ActualizarPaciente sse_decode_box_autoadd_actualizar_paciente(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_actualizar_paciente(deserializer));
+  }
+
+  @protected
+  ActualizarSesion sse_decode_box_autoadd_actualizar_sesion(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_actualizar_sesion(deserializer));
+  }
+
+  @protected
+  ActualizarTratamiento sse_decode_box_autoadd_actualizar_tratamiento(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_actualizar_tratamiento(deserializer));
+  }
+
+  @protected
+  double sse_decode_box_autoadd_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_f_64(deserializer));
+  }
+
+  @protected
+  PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_i_64(deserializer));
+  }
+
+  @protected
+  NuevaSesion sse_decode_box_autoadd_nueva_sesion(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_nueva_sesion(deserializer));
+  }
+
+  @protected
+  NuevoPaciente sse_decode_box_autoadd_nuevo_paciente(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_nuevo_paciente(deserializer));
+  }
+
+  @protected
+  NuevoTratamiento sse_decode_box_autoadd_nuevo_tratamiento(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_nuevo_tratamiento(deserializer));
+  }
+
+  @protected
+  Paciente sse_decode_box_autoadd_paciente(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_paciente(deserializer));
+  }
+
+  @protected
+  Sesion sse_decode_box_autoadd_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_sesion(deserializer));
+  }
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat64();
+  }
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getInt32();
+  }
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getPlatformInt64();
+  }
+
+  @protected
+  List<Paciente> sse_decode_list_paciente(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Paciente>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_paciente(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  List<Sesion> sse_decode_list_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Sesion>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_sesion(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<Tratamiento> sse_decode_list_tratamiento(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Tratamiento>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_tratamiento(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  NuevaSesion sse_decode_nueva_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_pacienteId = sse_decode_i_64(deserializer);
+    var var_tratamientoId = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_fecha = sse_decode_String(deserializer);
+    var var_notasSesion = sse_decode_opt_String(deserializer);
+    var var_observaciones = sse_decode_opt_String(deserializer);
+    var var_productosUsados = sse_decode_opt_String(deserializer);
+    var var_precioCobrado = sse_decode_opt_box_autoadd_f_64(deserializer);
+    var var_pagado = sse_decode_bool(deserializer);
+    return NuevaSesion(
+      pacienteId: var_pacienteId,
+      tratamientoId: var_tratamientoId,
+      fecha: var_fecha,
+      notasSesion: var_notasSesion,
+      observaciones: var_observaciones,
+      productosUsados: var_productosUsados,
+      precioCobrado: var_precioCobrado,
+      pagado: var_pagado,
+    );
+  }
+
+  @protected
+  NuevoPaciente sse_decode_nuevo_paciente(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_nombre = sse_decode_String(deserializer);
+    var var_apellido = sse_decode_String(deserializer);
+    var var_fechaNacimiento = sse_decode_opt_String(deserializer);
+    var var_telefono = sse_decode_opt_String(deserializer);
+    var var_email = sse_decode_opt_String(deserializer);
+    var var_direccion = sse_decode_opt_String(deserializer);
+    var var_notasGenerales = sse_decode_opt_String(deserializer);
+    var var_alergias = sse_decode_opt_String(deserializer);
+    var var_condicionesMedicas = sse_decode_opt_String(deserializer);
+    return NuevoPaciente(
+      nombre: var_nombre,
+      apellido: var_apellido,
+      fechaNacimiento: var_fechaNacimiento,
+      telefono: var_telefono,
+      email: var_email,
+      direccion: var_direccion,
+      notasGenerales: var_notasGenerales,
+      alergias: var_alergias,
+      condicionesMedicas: var_condicionesMedicas,
+    );
+  }
+
+  @protected
+  NuevoTratamiento sse_decode_nuevo_tratamiento(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_nombre = sse_decode_String(deserializer);
+    var var_descripcion = sse_decode_opt_String(deserializer);
+    var var_duracionMin = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_precio = sse_decode_opt_box_autoadd_f_64(deserializer);
+    return NuevoTratamiento(
+      nombre: var_nombre,
+      descripcion: var_descripcion,
+      duracionMin: var_duracionMin,
+      precio: var_precio,
+    );
+  }
+
+  @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_String(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_f_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_i_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  Paciente? sse_decode_opt_box_autoadd_paciente(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_paciente(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  Sesion? sse_decode_opt_box_autoadd_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_sesion(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  Paciente sse_decode_paciente(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_nombre = sse_decode_String(deserializer);
+    var var_apellido = sse_decode_String(deserializer);
+    var var_fechaNacimiento = sse_decode_opt_String(deserializer);
+    var var_telefono = sse_decode_opt_String(deserializer);
+    var var_email = sse_decode_opt_String(deserializer);
+    var var_direccion = sse_decode_opt_String(deserializer);
+    var var_notasGenerales = sse_decode_opt_String(deserializer);
+    var var_alergias = sse_decode_opt_String(deserializer);
+    var var_condicionesMedicas = sse_decode_opt_String(deserializer);
+    var var_fechaRegistro = sse_decode_String(deserializer);
+    var var_activo = sse_decode_bool(deserializer);
+    return Paciente(
+      id: var_id,
+      nombre: var_nombre,
+      apellido: var_apellido,
+      fechaNacimiento: var_fechaNacimiento,
+      telefono: var_telefono,
+      email: var_email,
+      direccion: var_direccion,
+      notasGenerales: var_notasGenerales,
+      alergias: var_alergias,
+      condicionesMedicas: var_condicionesMedicas,
+      fechaRegistro: var_fechaRegistro,
+      activo: var_activo,
+    );
+  }
+
+  @protected
+  PaginatedPacientes sse_decode_paginated_pacientes(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_items = sse_decode_list_paciente(deserializer);
+    var var_total = sse_decode_i_64(deserializer);
+    var var_page = sse_decode_i_32(deserializer);
+    var var_pageSize = sse_decode_i_32(deserializer);
+    return PaginatedPacientes(
+      items: var_items,
+      total: var_total,
+      page: var_page,
+      pageSize: var_pageSize,
+    );
+  }
+
+  @protected
+  PaginatedSesiones sse_decode_paginated_sesiones(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_items = sse_decode_list_sesion(deserializer);
+    var var_total = sse_decode_i_64(deserializer);
+    var var_page = sse_decode_i_32(deserializer);
+    var var_pageSize = sse_decode_i_32(deserializer);
+    return PaginatedSesiones(
+      items: var_items,
+      total: var_total,
+      page: var_page,
+      pageSize: var_pageSize,
+    );
+  }
+
+  @protected
+  Sesion sse_decode_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_pacienteId = sse_decode_i_64(deserializer);
+    var var_tratamientoId = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_fecha = sse_decode_String(deserializer);
+    var var_notasSesion = sse_decode_opt_String(deserializer);
+    var var_observaciones = sse_decode_opt_String(deserializer);
+    var var_productosUsados = sse_decode_opt_String(deserializer);
+    var var_precioCobrado = sse_decode_opt_box_autoadd_f_64(deserializer);
+    var var_pagado = sse_decode_bool(deserializer);
+    var var_createdAt = sse_decode_String(deserializer);
+    return Sesion(
+      id: var_id,
+      pacienteId: var_pacienteId,
+      tratamientoId: var_tratamientoId,
+      fecha: var_fecha,
+      notasSesion: var_notasSesion,
+      observaciones: var_observaciones,
+      productosUsados: var_productosUsados,
+      precioCobrado: var_precioCobrado,
+      pagado: var_pagado,
+      createdAt: var_createdAt,
+    );
+  }
+
+  @protected
+  Tratamiento sse_decode_tratamiento(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_nombre = sse_decode_String(deserializer);
+    var var_descripcion = sse_decode_opt_String(deserializer);
+    var var_duracionMin = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_precio = sse_decode_opt_box_autoadd_f_64(deserializer);
+    var var_activo = sse_decode_bool(deserializer);
+    return Tratamiento(
+      id: var_id,
+      nombre: var_nombre,
+      descripcion: var_descripcion,
+      duracionMin: var_duracionMin,
+      precio: var_precio,
+      activo: var_activo,
+    );
   }
 
   @protected
@@ -191,21 +1392,173 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getInt32();
-  }
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8() != 0;
-  }
-
-  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
+  }
+
+  @protected
+  void sse_encode_actualizar_paciente(
+    ActualizarPaciente self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_String(self.nombre, serializer);
+    sse_encode_String(self.apellido, serializer);
+    sse_encode_opt_String(self.fechaNacimiento, serializer);
+    sse_encode_opt_String(self.telefono, serializer);
+    sse_encode_opt_String(self.email, serializer);
+    sse_encode_opt_String(self.direccion, serializer);
+    sse_encode_opt_String(self.notasGenerales, serializer);
+    sse_encode_opt_String(self.alergias, serializer);
+    sse_encode_opt_String(self.condicionesMedicas, serializer);
+  }
+
+  @protected
+  void sse_encode_actualizar_sesion(
+    ActualizarSesion self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.tratamientoId, serializer);
+    sse_encode_String(self.fecha, serializer);
+    sse_encode_opt_String(self.notasSesion, serializer);
+    sse_encode_opt_String(self.observaciones, serializer);
+    sse_encode_opt_String(self.productosUsados, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.precioCobrado, serializer);
+    sse_encode_bool(self.pagado, serializer);
+  }
+
+  @protected
+  void sse_encode_actualizar_tratamiento(
+    ActualizarTratamiento self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_String(self.nombre, serializer);
+    sse_encode_opt_String(self.descripcion, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.duracionMin, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.precio, serializer);
+  }
+
+  @protected
+  void sse_encode_bool(bool self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_actualizar_paciente(
+    ActualizarPaciente self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_actualizar_paciente(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_actualizar_sesion(
+    ActualizarSesion self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_actualizar_sesion(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_actualizar_tratamiento(
+    ActualizarTratamiento self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_actualizar_tratamiento(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_f_64(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_i_64(
+    PlatformInt64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_nueva_sesion(
+    NuevaSesion self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_nueva_sesion(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_nuevo_paciente(
+    NuevoPaciente self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_nuevo_paciente(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_nuevo_tratamiento(
+    NuevoTratamiento self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_nuevo_tratamiento(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_paciente(
+    Paciente self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_paciente(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_sesion(Sesion self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_sesion(self, serializer);
+  }
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat64(self);
+  }
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putInt32(self);
+  }
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putPlatformInt64(self);
+  }
+
+  @protected
+  void sse_encode_list_paciente(List<Paciente> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_paciente(item, serializer);
+    }
   }
 
   @protected
@@ -219,6 +1572,192 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_sesion(List<Sesion> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_sesion(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_tratamiento(
+    List<Tratamiento> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_tratamiento(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_nueva_sesion(NuevaSesion self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.pacienteId, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.tratamientoId, serializer);
+    sse_encode_String(self.fecha, serializer);
+    sse_encode_opt_String(self.notasSesion, serializer);
+    sse_encode_opt_String(self.observaciones, serializer);
+    sse_encode_opt_String(self.productosUsados, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.precioCobrado, serializer);
+    sse_encode_bool(self.pagado, serializer);
+  }
+
+  @protected
+  void sse_encode_nuevo_paciente(NuevoPaciente self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.nombre, serializer);
+    sse_encode_String(self.apellido, serializer);
+    sse_encode_opt_String(self.fechaNacimiento, serializer);
+    sse_encode_opt_String(self.telefono, serializer);
+    sse_encode_opt_String(self.email, serializer);
+    sse_encode_opt_String(self.direccion, serializer);
+    sse_encode_opt_String(self.notasGenerales, serializer);
+    sse_encode_opt_String(self.alergias, serializer);
+    sse_encode_opt_String(self.condicionesMedicas, serializer);
+  }
+
+  @protected
+  void sse_encode_nuevo_tratamiento(
+    NuevoTratamiento self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.nombre, serializer);
+    sse_encode_opt_String(self.descripcion, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.duracionMin, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.precio, serializer);
+  }
+
+  @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_f_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_64(
+    PlatformInt64? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_i_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_paciente(
+    Paciente? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_paciente(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_sesion(
+    Sesion? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_sesion(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_paciente(Paciente self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_String(self.nombre, serializer);
+    sse_encode_String(self.apellido, serializer);
+    sse_encode_opt_String(self.fechaNacimiento, serializer);
+    sse_encode_opt_String(self.telefono, serializer);
+    sse_encode_opt_String(self.email, serializer);
+    sse_encode_opt_String(self.direccion, serializer);
+    sse_encode_opt_String(self.notasGenerales, serializer);
+    sse_encode_opt_String(self.alergias, serializer);
+    sse_encode_opt_String(self.condicionesMedicas, serializer);
+    sse_encode_String(self.fechaRegistro, serializer);
+    sse_encode_bool(self.activo, serializer);
+  }
+
+  @protected
+  void sse_encode_paginated_pacientes(
+    PaginatedPacientes self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_paciente(self.items, serializer);
+    sse_encode_i_64(self.total, serializer);
+    sse_encode_i_32(self.page, serializer);
+    sse_encode_i_32(self.pageSize, serializer);
+  }
+
+  @protected
+  void sse_encode_paginated_sesiones(
+    PaginatedSesiones self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_sesion(self.items, serializer);
+    sse_encode_i_64(self.total, serializer);
+    sse_encode_i_32(self.page, serializer);
+    sse_encode_i_32(self.pageSize, serializer);
+  }
+
+  @protected
+  void sse_encode_sesion(Sesion self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_i_64(self.pacienteId, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.tratamientoId, serializer);
+    sse_encode_String(self.fecha, serializer);
+    sse_encode_opt_String(self.notasSesion, serializer);
+    sse_encode_opt_String(self.observaciones, serializer);
+    sse_encode_opt_String(self.productosUsados, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.precioCobrado, serializer);
+    sse_encode_bool(self.pagado, serializer);
+    sse_encode_String(self.createdAt, serializer);
+  }
+
+  @protected
+  void sse_encode_tratamiento(Tratamiento self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_String(self.nombre, serializer);
+    sse_encode_opt_String(self.descripcion, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.duracionMin, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.precio, serializer);
+    sse_encode_bool(self.activo, serializer);
+  }
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self);
@@ -227,17 +1766,5 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   void sse_encode_unit(void self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-  }
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putInt32(self);
-  }
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self ? 1 : 0);
   }
 }
