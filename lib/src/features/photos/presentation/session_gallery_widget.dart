@@ -4,12 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import '../providers/photos_provider.dart';
 import '../../../rust/db/models.dart';
 
 class SessionGalleryWidget extends ConsumerWidget {
-  final int sessionId;
-  final int pacienteId;
+  final PlatformInt64 sessionId;
+  final PlatformInt64 pacienteId;
 
   const SessionGalleryWidget({
     super.key,

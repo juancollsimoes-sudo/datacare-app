@@ -211,8 +211,8 @@ class _SessionFormScreenState extends ConsumerState<SessionFormScreen> {
                 const Divider(),
                 const SizedBox(height: 16),
                 import_photos.SessionGalleryWidget(
-                  sessionId: widget.session!.id.toInt(),
-                  pacienteId: widget.patientId.toInt(),
+                  sessionId: widget.session!.id,
+                  pacienteId: widget.patientId,
                 ),
               ],
             ],

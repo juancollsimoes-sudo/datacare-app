@@ -107,7 +107,7 @@ class PatientDetailScreen extends ConsumerWidget {
                     children: [
                       _buildSessionsCard(context, ref, patientId),
                       const SizedBox(height: 16),
-                      _buildPatientGalleryCard(context, ref, patientId.toInt()),
+                      _buildPatientGalleryCard(context, ref, patientId),
                     ],
                   ),
                 ),
@@ -321,7 +321,7 @@ class _InfoCol extends StatelessWidget {
   }
 }
 
-Widget _buildPatientGalleryCard(BuildContext context, WidgetRef ref, int patientId) {
+Widget _buildPatientGalleryCard(BuildContext context, WidgetRef ref, PlatformInt64 patientId) {
   final photosState = ref.watch(patientPhotosProvider(patientId));
 
   return Card(

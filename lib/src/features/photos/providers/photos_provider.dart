@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import '../../../core/api/api_provider.dart';
 import '../../../rust/db/models.dart';
 
 class PhotosNotifier extends StateNotifier<AsyncValue<List<FotoSesion>>> {
-  final int sessionId;
+  final PlatformInt64 sessionId;
   final Ref ref;
 
   PhotosNotifier(this.sessionId, this.ref) : super(const AsyncValue.loading()) {
@@ -21,7 +22,7 @@ class PhotosNotifier extends StateNotifier<AsyncValue<List<FotoSesion>>> {
     }
   }
 
-  Future<void> addPhoto(int pacienteId, String inputPath, String? tipo, String? descripcion) async {
+  Future<void> addPhoto(PlatformInt64 pacienteId, String inputPath, String? tipo, String? descripcion) async {
     try {
       final apiClient = ref.read(apiClientProvider);
       await apiClient.saveSessionPhoto(
@@ -37,7 +38,7 @@ class PhotosNotifier extends StateNotifier<AsyncValue<List<FotoSesion>>> {
     }
   }
 
-  Future<void> removePhoto(int fotoId) async {
+  Future<void> removePhoto(PlatformInt64 fotoId) async {
     try {
       final apiClient = ref.read(apiClientProvider);
       await apiClient.deletePhoto(fotoId: fotoId);
@@ -48,11 +49,11 @@ class PhotosNotifier extends StateNotifier<AsyncValue<List<FotoSesion>>> {
   }
 }
 
-final sessionPhotosProvider = StateNotifierProvider.family<PhotosNotifier, AsyncValue<List<FotoSesion>>, int>((ref, sessionId) {
+final sessionPhotosProvider = StateNotifierProvider.family<PhotosNotifier, AsyncValue<List<FotoSesion>>, PlatformInt64>((ref, sessionId) {
   return PhotosNotifier(sessionId, ref);
 });
 
-final patientPhotosProvider = FutureProvider.family<List<FotoSesion>, int>((ref, pacienteId) async {
+final patientPhotosProvider = FutureProvider.family<List<FotoSesion>, PlatformInt64>((ref, pacienteId) async {
   final apiClient = ref.read(apiClientProvider);
   return await apiClient.listPhotosByPatient(pacienteId: pacienteId);
 });

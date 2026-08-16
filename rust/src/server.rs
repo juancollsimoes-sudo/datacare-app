@@ -40,6 +40,7 @@ pub async fn start_server(port: u16) {
 
     let app = Router::new()
         .nest("/api", api_routes)
+        .fallback_service(tower_http::services::ServeDir::new("build/web"))
         .layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
