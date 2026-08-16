@@ -12,8 +12,9 @@ import 'package:flutter/foundation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemTheme.accentColor.load();
+  
   if (!kIsWeb) {
+    await SystemTheme.accentColor.load();
     await RustLib.init();
     
     // Initialize Database
