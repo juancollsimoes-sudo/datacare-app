@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import '../providers/photos_provider.dart';
 import '../../../rust/db/models.dart';
@@ -100,7 +101,9 @@ class SessionGalleryWidget extends ConsumerWidget {
             itemCount: photos.length,
             builder: (context, index) {
               return PhotoViewGalleryPageOptions(
-                imageProvider: FileImage(File(photos[index].rutaFoto)),
+                imageProvider: kIsWeb
+                    ? NetworkImage(Uri.base.resolve('/photos/${photos[index].rutaFoto.split('photos/').last}').toString()) as ImageProvider
+                    : FileImage(File(photos[index].rutaFoto)),
                 initialScale: PhotoViewComputedScale.contained,
                 heroAttributes: PhotoViewHeroAttributes(tag: photos[index].id),
               );
@@ -139,8 +142,8 @@ class SessionGalleryWidget extends ConsumerWidget {
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 200,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
               ),
@@ -154,10 +157,15 @@ class SessionGalleryWidget extends ConsumerWidget {
                       onTap: () => _openGallery(context, photos, index),
                       child: Hero(
                         tag: photo.id,
-                        child: Image.file(
-                          File(photo.rutaThumb ?? photo.rutaFoto),
-                          fit: BoxFit.cover,
-                        ),
+                        child: kIsWeb
+                          ? Image.network(
+                              Uri.base.resolve('/photos/${(photo.rutaThumb ?? photo.rutaFoto).split('photos/').last}').toString(),
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(photo.rutaThumb ?? photo.rutaFoto),
+                              fit: BoxFit.cover,
+                            ),
                       ),
                     ),
                     Positioned(

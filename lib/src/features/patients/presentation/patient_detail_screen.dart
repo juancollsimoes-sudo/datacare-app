@@ -377,10 +377,15 @@ Widget _buildPatientGalleryCard(BuildContext context, WidgetRef ref, PlatformInt
                         onTap: () => _openUnifiedGallery(context, photos, index),
                         child: Hero(
                           tag: 'patient_${photo.id}',
-                          child: Image.file(
-                            File(photo.rutaThumb ?? photo.rutaFoto),
-                            fit: BoxFit.cover,
-                          ),
+                          child: kIsWeb 
+                            ? Image.network(
+                                Uri.base.resolve('/photos/${(photo.rutaThumb ?? photo.rutaFoto).split('photos/').last}').toString(),
+                                fit: BoxFit.cover,
+                              )
+                            : Image.file(
+                                File(photo.rutaThumb ?? photo.rutaFoto),
+                                fit: BoxFit.cover,
+                              ),
                         ),
                       ),
                       if (photo.tipo != null)
@@ -422,7 +427,9 @@ void _openUnifiedGallery(BuildContext context, List<FotoSesion> photos, int init
           itemCount: photos.length,
           builder: (context, index) {
             return PhotoViewGalleryPageOptions(
-              imageProvider: FileImage(File(photos[index].rutaFoto)),
+              imageProvider: kIsWeb
+                  ? NetworkImage(Uri.base.resolve('/photos/${photos[index].rutaFoto.split('photos/').last}').toString()) as ImageProvider
+                  : FileImage(File(photos[index].rutaFoto)),
               initialScale: PhotoViewComputedScale.contained,
               heroAttributes: PhotoViewHeroAttributes(tag: 'patient_${photos[index].id}'),
             );

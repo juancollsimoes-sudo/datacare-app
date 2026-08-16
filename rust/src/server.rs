@@ -38,8 +38,12 @@ pub async fn start_server(port: u16) {
         .route("/fotos/{id}", delete(delete_photo))
         .route("/stats", get(get_stats));
 
+    let home = std::env::var("HOME").unwrap_or_default();
+    let photos_dir = format!("{}/.local/share/datacare/photos", home);
+
     let app = Router::new()
         .nest("/api", api_routes)
+        .nest_service("/photos", tower_http::services::ServeDir::new(photos_dir))
         .fallback_service(tower_http::services::ServeDir::new("build/web"))
         .layer(cors);
 
