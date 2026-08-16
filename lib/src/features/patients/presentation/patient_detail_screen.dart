@@ -105,7 +105,6 @@ class PatientDetailScreen extends ConsumerWidget {
                     children: [
                       _buildSessionsCard(context, ref, patientId),
                       const SizedBox(height: 16),
-                      // Placeholder para galería de fotos
                       Card(
                         child: Container(
                           width: double.infinity,
@@ -113,9 +112,9 @@ class PatientDetailScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Galería de Fotos (Próximamente)', style: Theme.of(context).textTheme.titleLarge),
+                              Text('Galería de Fotos', style: Theme.of(context).textTheme.titleLarge),
                               const SizedBox(height: 16),
-                              const Text('Aquí se mostrará la galería fotográfica en la Etapa 6.'),
+                              const Text('Las fotografías clínicas se gestionan de forma individual para cada sesión.\n\nHaz clic en una sesión del historial o crea una nueva para subir, ver o comparar fotos de Antes/Después.'),
                             ],
                           ),
                         ),
