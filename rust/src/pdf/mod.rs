@@ -1,5 +1,4 @@
 use crate::db::error::AppError;
-use crate::db::models::{Paciente, Sesion};
 use crate::db::repository::{PacienteRepo, SesionRepo};
 use crate::db::DatabaseManager;
 use printpdf::*;

@@ -386,3 +386,33 @@ impl ImportacionRepo {
         Ok(conn.last_insert_rowid())
     }
 }
+
+pub struct StatsRepo;
+
+impl StatsRepo {
+    pub fn get_dashboard_stats(conn: &Connection) -> Result<DashboardStats, AppError> {
+        let total_pacientes_activos: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM pacientes WHERE activo = 1",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(0);
+
+        let sesiones_este_mes: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM sesiones WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(0);
+
+        let tratamientos_registrados: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM tratamientos WHERE activo = 1",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(0);
+
+        Ok(DashboardStats {
+            total_pacientes_activos,
+            sesiones_este_mes,
+            tratamientos_registrados,
+        })
+    }
+}

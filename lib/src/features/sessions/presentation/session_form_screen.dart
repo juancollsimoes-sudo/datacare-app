@@ -147,7 +147,7 @@ class _SessionFormScreenState extends ConsumerState<SessionFormScreen> {
                 data: (treatments) {
                   return DropdownButtonFormField<PlatformInt64>(
                     decoration: const InputDecoration(labelText: 'Tratamiento'),
-                    value: _selectedTratamientoId,
+                    initialValue: _selectedTratamientoId,
                     items: [
                       const DropdownMenuItem<PlatformInt64>(
                         value: null,

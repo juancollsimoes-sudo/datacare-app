@@ -18,7 +18,7 @@
 | 8 | Generación de PDFs clínicos | ✅ Completada | 2026-08-15 | PDF básico con printpdf |
 | 9 | Backups automáticos | ✅ Completada | 2026-08-15 | Compresión zip en Rust y UI Flutter |
 | 10 | CI/CD GitHub Actions + Inno Setup | ✅ Completada | 2026-08-15 | Workflows CI/CD, Inno Setup, README profesional |
-| 11 | Pulido, testing y hardening | ⏳ Pendiente | — | — |
+| 11 | Pulido, testing y hardening | ✅ Completada | 2026-08-15 | Dashboard Home agregado, fixes de lint en Dart y Rust 
 
 ---
 

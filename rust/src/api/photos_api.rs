@@ -3,7 +3,6 @@ use crate::db::repository::FotoRepo;
 use crate::db::DatabaseManager;
 use crate::photos::PhotoManager;
 use std::path::Path;
-use std::env;
 
 // Initialize PhotoManager with a base path (e.g. in the app data directory)
 fn get_photo_manager() -> Result<PhotoManager, String> {

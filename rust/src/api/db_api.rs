@@ -68,3 +68,9 @@ pub fn update_sesion(sesion: ActualizarSesion) -> Result<(), String> {
     let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
     SesionRepo::actualizar(&conn, &sesion).map_err(|e| e.to_string_err())
 }
+
+// --- STATS API ---
+pub fn get_dashboard_stats() -> Result<crate::db::models::DashboardStats, String> {
+    let conn = crate::db::DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    crate::db::repository::StatsRepo::get_dashboard_stats(&conn).map_err(|e| e.to_string_err())
+}

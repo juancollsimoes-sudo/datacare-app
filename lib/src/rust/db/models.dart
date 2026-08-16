@@ -143,6 +143,33 @@ class ActualizarTratamiento {
           precio == other.precio;
 }
 
+class DashboardStats {
+  final PlatformInt64 totalPacientesActivos;
+  final PlatformInt64 sesionesEsteMes;
+  final PlatformInt64 tratamientosRegistrados;
+
+  const DashboardStats({
+    required this.totalPacientesActivos,
+    required this.sesionesEsteMes,
+    required this.tratamientosRegistrados,
+  });
+
+  @override
+  int get hashCode =>
+      totalPacientesActivos.hashCode ^
+      sesionesEsteMes.hashCode ^
+      tratamientosRegistrados.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DashboardStats &&
+          runtimeType == other.runtimeType &&
+          totalPacientesActivos == other.totalPacientesActivos &&
+          sesionesEsteMes == other.sesionesEsteMes &&
+          tratamientosRegistrados == other.tratamientosRegistrados;
+}
+
 class FotoSesion {
   final PlatformInt64 id;
   final PlatformInt64 sesionId;

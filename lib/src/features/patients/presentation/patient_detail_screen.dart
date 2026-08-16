@@ -1,4 +1,4 @@
-import "dart:typed_data";
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +7,7 @@ import 'package:file_picker/file_picker.dart' as file_picker;
 import '../../../rust/api/pdf_api.dart';
 import '../providers/patients_providers.dart';
 import '../../sessions/providers/sessions_providers.dart';
-import '../../../rust/db/models.dart';
+
 
 
 class PatientDetailScreen extends ConsumerWidget {
@@ -41,7 +41,7 @@ class PatientDetailScreen extends ConsumerWidget {
                 );
                 
                 if (result != null) {
-                  await apiGeneratePatientReport(pacienteId: patientId, outputPath: result);
+                  await apiGeneratePatientReport(pacienteId: patientId, outputPath: result.toFilePath());
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('PDF generado exitosamente')),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/treatments_providers.dart';
-import '../../../rust/db/models.dart';
+
 
 class TreatmentsScreen extends ConsumerWidget {
   const TreatmentsScreen({super.key});

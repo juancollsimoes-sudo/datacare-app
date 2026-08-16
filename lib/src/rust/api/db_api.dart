@@ -64,3 +64,6 @@ Future<Sesion?> getSesion({required PlatformInt64 id}) =>
 
 Future<void> updateSesion({required ActualizarSesion sesion}) =>
     RustLib.instance.api.crateApiDbApiUpdateSesion(sesion: sesion);
+
+Future<DashboardStats> getDashboardStats() =>
+    RustLib.instance.api.crateApiDbApiGetDashboardStats();

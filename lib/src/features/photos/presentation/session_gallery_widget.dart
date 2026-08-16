@@ -22,8 +22,8 @@ class SessionGalleryWidget extends ConsumerWidget {
       type: FileType.image,
     );
 
-    if (result != null && result.single.path != null) {
-      final path = result.single.path!;
+    if (result.isNotEmpty && result.first.path != null) {
+      final path = result.first.path!;
       
       String? selectedTipo;
       String? description;

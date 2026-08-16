@@ -106,7 +106,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                               DataCell(
                                 Chip(
                                   label: Text(paciente.activo ? 'Activo' : 'Inactivo'),
-                                  backgroundColor: paciente.activo ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                  color: WidgetStatePropertyAll(paciente.activo ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1)),
                                   labelStyle: TextStyle(
                                     color: paciente.activo ? Colors.green : Colors.red,
                                     fontSize: 12,

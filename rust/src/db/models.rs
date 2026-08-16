@@ -154,3 +154,10 @@ pub struct NuevaImportacion {
     pub filas_error: i64,
     pub log_detalle: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DashboardStats {
+    pub total_pacientes_activos: i64,
+    pub sesiones_este_mes: i64,
+    pub tratamientos_registrados: i64,
+}

@@ -2,7 +2,7 @@ use crate::api::db_api::create_paciente;
 use crate::db::models::{NuevoPaciente, NuevaImportacion};
 use crate::db::repository::ImportacionRepo;
 use crate::db::DatabaseManager;
-use crate::parser::{parse_excel, ExcelRow};
+use crate::parser::parse_excel;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

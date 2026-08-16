@@ -49,8 +49,8 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       allowedExtensions: ['zip'],
     );
 
-    if (result == null || result.isEmpty || result.single.path == null) return;
-    final zipPath = result.single.path!;
+    if (result.isEmpty || result.first.path == null) return;
+    final zipPath = result.first.path!;
 
     if (!mounted) return;
     
