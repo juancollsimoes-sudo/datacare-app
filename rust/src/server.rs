@@ -26,16 +26,16 @@ pub async fn start_server(port: u16) {
 
     let api_routes = Router::new()
         .route("/pacientes", get(list_pacientes).post(create_paciente))
-        .route("/pacientes/:id", get(get_paciente).put(update_paciente).delete(deactivate_paciente))
+        .route("/pacientes/{id}", get(get_paciente).put(update_paciente).delete(deactivate_paciente))
         .route("/tratamientos", get(list_tratamientos).post(create_tratamiento))
-        .route("/tratamientos/:id", get(get_tratamiento).put(update_tratamiento).delete(delete_tratamiento))
+        .route("/tratamientos/{id}", get(get_tratamiento).put(update_tratamiento).delete(delete_tratamiento))
         .route("/sesiones", post(create_sesion))
-        .route("/sesiones/:id", get(get_sesion).put(update_sesion))
-        .route("/pacientes/:id/sesiones", get(list_sesiones))
-        .route("/sesiones/:id/fotos", get(list_fotos_sesion))
-        .route("/pacientes/:id/fotos", get(list_fotos_paciente))
+        .route("/sesiones/{id}", get(get_sesion).put(update_sesion))
+        .route("/pacientes/{id}/sesiones", get(list_sesiones))
+        .route("/sesiones/{id}/fotos", get(list_fotos_sesion))
+        .route("/pacientes/{id}/fotos", get(list_fotos_paciente))
         .route("/fotos", post(upload_photo))
-        .route("/fotos/:id", delete(delete_photo))
+        .route("/fotos/{id}", delete(delete_photo))
         .route("/stats", get(get_stats));
 
     let app = Router::new()
