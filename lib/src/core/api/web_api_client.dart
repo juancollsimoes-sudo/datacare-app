@@ -15,9 +15,17 @@ PlatformInt64 _toPlatformInt64(dynamic value) {
 }
 
 class WebApiClient implements ApiClient {
-  final String baseUrl;
+  late final String baseUrl;
 
-  WebApiClient({this.baseUrl = 'http://localhost:8080/api'});
+  WebApiClient({String? baseUrl}) {
+    if (baseUrl != null) {
+      this.baseUrl = baseUrl;
+    } else if (kIsWeb) {
+      this.baseUrl = '${Uri.base.origin}/api';
+    } else {
+      this.baseUrl = 'http://localhost:8080/api';
+    }
+  }
 
   @override
   Future<PaginatedPacientes> listPacientes({
