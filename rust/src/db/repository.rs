@@ -195,6 +195,14 @@ impl TratamientoRepo {
         )?;
         Ok(())
     }
+
+    pub fn desactivar(conn: &Connection, id: i64) -> Result<(), AppError> {
+        conn.execute(
+            "UPDATE tratamientos SET activo = 0 WHERE id = ?1",
+            params![id],
+        )?;
+        Ok(())
+    }
 }
 
 // --- SESIONES ---

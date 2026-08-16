@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../rust/api/db_api.dart';
+import '../../../core/api/api_provider.dart';
 import '../../../rust/db/models.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
@@ -27,7 +27,8 @@ class PatientsNotifier extends AsyncNotifier<PatientsListState> {
   }
 
   Future<PatientsListState> _fetchPatients(String search, int page, int pageSize) async {
-    final result = await listPacientes(
+    final apiClient = ref.read(apiClientProvider);
+    final result = await apiClient.listPacientes(
       search: search.isEmpty ? null : search,
       page: page,
       pageSize: pageSize,
@@ -94,7 +95,8 @@ final patientsProvider = AsyncNotifierProvider<PatientsNotifier, PatientsListSta
 );
 
 final patientDetailProvider = FutureProvider.family<Paciente?, PlatformInt64>((ref, id) async {
-  return await getPaciente(id: id);
+  final apiClient = ref.read(apiClientProvider);
+  return await apiClient.getPaciente(id: id);
 });
 
 final patientsActionProvider = Provider((ref) {
@@ -106,18 +108,21 @@ class PatientsActionService {
   PatientsActionService(this.ref);
 
   Future<void> addPatient(NuevoPaciente paciente) async {
-    await createPaciente(paciente: paciente);
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.createPaciente(paciente: paciente);
     ref.read(patientsProvider.notifier).refresh();
   }
 
   Future<void> editPatient(ActualizarPaciente paciente) async {
-    await updatePaciente(paciente: paciente);
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.updatePaciente(paciente: paciente);
     ref.invalidate(patientDetailProvider(paciente.id));
     ref.read(patientsProvider.notifier).refresh();
   }
 
   Future<void> deactivate(PlatformInt64 id) async {
-    await deactivatePaciente(id: id);
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.deactivatePaciente(id: id);
     ref.invalidate(patientDetailProvider(id));
     ref.read(patientsProvider.notifier).refresh();
   }

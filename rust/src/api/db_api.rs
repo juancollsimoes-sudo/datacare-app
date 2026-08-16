@@ -43,9 +43,19 @@ pub fn list_tratamientos() -> Result<Vec<Tratamiento>, String> {
     TratamientoRepo::listar(&conn).map_err(|e| e.to_string_err())
 }
 
+pub fn get_tratamiento(id: i64) -> Result<Option<Tratamiento>, String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    TratamientoRepo::obtener(&conn, id).map_err(|e| e.to_string_err())
+}
+
 pub fn update_tratamiento(tratamiento: ActualizarTratamiento) -> Result<(), String> {
     let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
     TratamientoRepo::actualizar(&conn, &tratamiento).map_err(|e| e.to_string_err())
+}
+
+pub fn delete_tratamiento(id: i64) -> Result<(), String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    TratamientoRepo::desactivar(&conn, id).map_err(|e| e.to_string_err())
 }
 
 // --- SESIONES API ---

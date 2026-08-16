@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../rust/api/db_api.dart';
+import '../../../core/api/api_provider.dart';
 import '../../../rust/db/models.dart';
 // import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
@@ -10,7 +10,8 @@ class TreatmentsNotifier extends AsyncNotifier<List<Tratamiento>> {
   }
 
   Future<List<Tratamiento>> _fetchTreatments() async {
-    return await listTratamientos();
+    final apiClient = ref.read(apiClientProvider);
+    return await apiClient.listTratamientos();
   }
 
   Future<void> refresh() async {
@@ -37,12 +38,14 @@ class TreatmentsActionService {
   TreatmentsActionService(this.ref);
 
   Future<void> addTreatment(NuevoTratamiento tratamiento) async {
-    await createTratamiento(tratamiento: tratamiento);
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.createTratamiento(tratamiento: tratamiento);
     ref.read(treatmentsProvider.notifier).refresh();
   }
 
   Future<void> editTreatment(ActualizarTratamiento tratamiento) async {
-    await updateTratamiento(tratamiento: tratamiento);
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.updateTratamiento(tratamiento: tratamiento);
     ref.read(treatmentsProvider.notifier).refresh();
   }
 }

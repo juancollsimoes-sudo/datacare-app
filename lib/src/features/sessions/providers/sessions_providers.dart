@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../rust/api/db_api.dart';
+import '../../../core/api/api_provider.dart';
 import '../../../rust/db/models.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
@@ -24,7 +24,8 @@ class SessionsNotifier extends AutoDisposeFamilyAsyncNotifier<SessionsListState,
   }
 
   Future<SessionsListState> _fetchSessions(PlatformInt64 pacienteId, int page, int pageSize) async {
-    final result = await listSesionesByPaciente(
+    final apiClient = ref.read(apiClientProvider);
+    final result = await apiClient.listSesionesByPaciente(
       pacienteId: pacienteId,
       page: page,
       pageSize: pageSize,
@@ -70,7 +71,8 @@ final patientSessionsProvider = AsyncNotifierProvider.autoDispose.family<Session
 );
 
 final sessionDetailProvider = FutureProvider.family<Sesion?, PlatformInt64>((ref, id) async {
-  return await getSesion(id: id);
+  final apiClient = ref.read(apiClientProvider);
+  return await apiClient.getSesion(id: id);
 });
 
 final sessionsActionProvider = Provider((ref) {
@@ -82,12 +84,14 @@ class SessionsActionService {
   SessionsActionService(this.ref);
 
   Future<void> addSession(NuevaSesion sesion) async {
-    await createSesion(sesion: sesion);
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.createSesion(sesion: sesion);
     ref.invalidate(patientSessionsProvider(sesion.pacienteId));
   }
 
   Future<void> editSession(ActualizarSesion sesion, PlatformInt64 pacienteId) async {
-    await updateSesion(sesion: sesion);
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.updateSesion(sesion: sesion);
     ref.invalidate(sessionDetailProvider(sesion.id));
     ref.invalidate(patientSessionsProvider(pacienteId));
   }
