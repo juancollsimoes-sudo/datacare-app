@@ -69,13 +69,13 @@ class WebApiClient implements ApiClient {
       body: jsonEncode({
         'nombre': paciente.nombre,
         'apellido': paciente.apellido,
-        'fechaNacimiento': paciente.fechaNacimiento,
+        'fecha_nacimiento': paciente.fechaNacimiento,
         'telefono': paciente.telefono,
         'email': paciente.email,
         'direccion': paciente.direccion,
-        'notasGenerales': paciente.notasGenerales,
+        'notas_generales': paciente.notasGenerales,
         'alergias': paciente.alergias,
-        'condicionesMedicas': paciente.condicionesMedicas,
+        'condiciones_medicas': paciente.condicionesMedicas,
       }),
     );
 
@@ -97,13 +97,13 @@ class WebApiClient implements ApiClient {
         'id': paciente.id.toInt(),
         'nombre': paciente.nombre,
         'apellido': paciente.apellido,
-        'fechaNacimiento': paciente.fechaNacimiento,
+        'fecha_nacimiento': paciente.fechaNacimiento,
         'telefono': paciente.telefono,
         'email': paciente.email,
         'direccion': paciente.direccion,
-        'notasGenerales': paciente.notasGenerales,
+        'notas_generales': paciente.notasGenerales,
         'alergias': paciente.alergias,
-        'condicionesMedicas': paciente.condicionesMedicas,
+        'condiciones_medicas': paciente.condicionesMedicas,
       }),
     );
 
@@ -132,7 +132,7 @@ class WebApiClient implements ApiClient {
       body: jsonEncode({
         'nombre': tratamiento.nombre,
         'descripcion': tratamiento.descripcion,
-        'duracionMin': tratamiento.duracionMin?.toInt(),
+        'duracion_min': tratamiento.duracionMin?.toInt(),
         'precio': tratamiento.precio,
       }),
     );
@@ -164,7 +164,7 @@ class WebApiClient implements ApiClient {
         'id': tratamiento.id.toInt(),
         'nombre': tratamiento.nombre,
         'descripcion': tratamiento.descripcion,
-        'duracionMin': tratamiento.duracionMin?.toInt(),
+        'duracion_min': tratamiento.duracionMin?.toInt(),
         'precio': tratamiento.precio,
       }),
     );
@@ -181,13 +181,13 @@ class WebApiClient implements ApiClient {
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'pacienteId': sesion.pacienteId.toInt(),
-        'tratamientoId': sesion.tratamientoId?.toInt(),
+        'paciente_id': sesion.pacienteId.toInt(),
+        'tratamiento_id': sesion.tratamientoId?.toInt(),
         'fecha': sesion.fecha,
-        'notasSesion': sesion.notasSesion,
+        'notas_sesion': sesion.notasSesion,
         'observaciones': sesion.observaciones,
-        'productosUsados': sesion.productosUsados,
-        'precioCobrado': sesion.precioCobrado,
+        'productos_usados': sesion.productosUsados,
+        'precio_cobrado': sesion.precioCobrado,
         'pagado': sesion.pagado,
       }),
     );
@@ -242,12 +242,12 @@ class WebApiClient implements ApiClient {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'id': sesion.id.toInt(),
-        'tratamientoId': sesion.tratamientoId?.toInt(),
+        'tratamiento_id': sesion.tratamientoId?.toInt(),
         'fecha': sesion.fecha,
-        'notasSesion': sesion.notasSesion,
+        'notas_sesion': sesion.notasSesion,
         'observaciones': sesion.observaciones,
-        'productosUsados': sesion.productosUsados,
-        'precioCobrado': sesion.precioCobrado,
+        'productos_usados': sesion.productosUsados,
+        'precio_cobrado': sesion.precioCobrado,
         'pagado': sesion.pagado,
       }),
     );
@@ -280,8 +280,8 @@ class WebApiClient implements ApiClient {
     // This is a basic implementation assuming standard API semantics.
     final uri = Uri.parse('$baseUrl/fotos');
     final request = http.MultipartRequest('POST', uri);
-    request.fields['pacienteId'] = pacienteId.toString();
-    request.fields['sesionId'] = sesionId.toString();
+    request.fields['paciente_id'] = pacienteId.toString();
+    request.fields['sesion_id'] = sesionId.toString();
     if (tipo != null) request.fields['tipo'] = tipo;
     if (descripcion != null) request.fields['descripcion'] = descripcion;
     // Assuming inputPath is either a web URL or we might need byte data (which is missing here without web specific adaptations)
@@ -329,14 +329,14 @@ class WebApiClient implements ApiClient {
       id: _toPlatformInt64(json['id']),
       nombre: json['nombre'],
       apellido: json['apellido'],
-      fechaNacimiento: json['fechaNacimiento'],
+      fechaNacimiento: json['fecha_nacimiento'],
       telefono: json['telefono'],
       email: json['email'],
       direccion: json['direccion'],
-      notasGenerales: json['notasGenerales'],
+      notasGenerales: json['notas_generales'],
       alergias: json['alergias'],
-      condicionesMedicas: json['condicionesMedicas'],
-      fechaRegistro: json['fechaRegistro'] ?? '',
+      condicionesMedicas: json['condiciones_medicas'],
+      fechaRegistro: json['fecha_registro'] ?? '',
       activo: json['activo'] ?? true,
     );
   }
@@ -346,7 +346,7 @@ class WebApiClient implements ApiClient {
       id: _toPlatformInt64(json['id']),
       nombre: json['nombre'],
       descripcion: json['descripcion'],
-      duracionMin: json['duracionMin'] != null ? _toPlatformInt64(json['duracionMin']) : null,
+      duracionMin: json['duracion_min'] != null ? _toPlatformInt64(json['duracion_min']) : null,
       precio: (json['precio'] as num?)?.toDouble(),
       activo: json['activo'] ?? true,
     );
@@ -355,35 +355,35 @@ class WebApiClient implements ApiClient {
   Sesion _parseSesion(Map<String, dynamic> json) {
     return Sesion(
       id: _toPlatformInt64(json['id']),
-      pacienteId: _toPlatformInt64(json['pacienteId']),
-      tratamientoId: json['tratamientoId'] != null ? _toPlatformInt64(json['tratamientoId']) : null,
+      pacienteId: _toPlatformInt64(json['paciente_id']),
+      tratamientoId: json['tratamiento_id'] != null ? _toPlatformInt64(json['tratamiento_id']) : null,
       fecha: json['fecha'],
-      notasSesion: json['notasSesion'],
+      notasSesion: json['notas_sesion'],
       observaciones: json['observaciones'],
-      productosUsados: json['productosUsados'],
-      precioCobrado: (json['precioCobrado'] as num?)?.toDouble(),
+      productosUsados: json['productos_usados'],
+      precioCobrado: (json['precio_cobrado'] as num?)?.toDouble(),
       pagado: json['pagado'] ?? false,
-      createdAt: json['createdAt'] ?? '',
+      createdAt: json['created_at'] ?? '',
     );
   }
 
   DashboardStats _parseDashboardStats(Map<String, dynamic> json) {
     return DashboardStats(
-      totalPacientesActivos: _toPlatformInt64(json['totalPacientesActivos'] ?? 0),
-      sesionesEsteMes: _toPlatformInt64(json['sesionesEsteMes'] ?? 0),
-      tratamientosRegistrados: _toPlatformInt64(json['tratamientosRegistrados'] ?? 0),
+      totalPacientesActivos: _toPlatformInt64(json['total_pacientes_activos'] ?? 0),
+      sesionesEsteMes: _toPlatformInt64(json['sesiones_este_mes'] ?? 0),
+      tratamientosRegistrados: _toPlatformInt64(json['tratamientos_registrados'] ?? 0),
     );
   }
 
   FotoSesion _parseFotoSesion(Map<String, dynamic> json) {
     return FotoSesion(
       id: _toPlatformInt64(json['id']),
-      sesionId: _toPlatformInt64(json['sesionId']),
-      rutaFoto: json['rutaFoto'],
-      rutaThumb: json['rutaThumb'],
+      sesionId: _toPlatformInt64(json['sesion_id']),
+      rutaFoto: json['ruta_foto'],
+      rutaThumb: json['ruta_thumb'],
       tipo: json['tipo'],
       descripcion: json['descripcion'],
-      createdAt: json['createdAt'] ?? '',
+      createdAt: json['created_at'] ?? '',
     );
   }
 }
