@@ -13,17 +13,17 @@ import 'package:flutter/foundation.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemTheme.accentColor.load();
-  await RustLib.init();
-  
-  // Initialize Database
-  final home = Platform.environment['HOME'] ?? '';
-  final dbDir = Directory('$home/.local/share/datacare');
-  if (!await dbDir.exists()) {
-    await dbDir.create(recursive: true);
-  }
-  await initDatabase(dbPath: '${dbDir.path}/datacare.db');
-
   if (!kIsWeb) {
+    await RustLib.init();
+    
+    // Initialize Database
+    final home = Platform.environment['HOME'] ?? '';
+    final dbDir = Directory('$home/.local/share/datacare');
+    if (!await dbDir.exists()) {
+      await dbDir.create(recursive: true);
+    }
+    await initDatabase(dbPath: '${dbDir.path}/datacare.db');
+
     try {
       startLocalServer(port: 8080);
       debugPrint('Local server started on port 8080');
