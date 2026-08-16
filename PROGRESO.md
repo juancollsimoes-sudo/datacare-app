@@ -12,7 +12,7 @@
 | 2 | Material 3, tema dinámico, router, shell | ✅ Completada | 2026-08-15 | SystemThemeBuilder, GoRouter, NavigationRail, pantallas placeholder |
 | 3 | SQLite, migraciones, CRUD en Rust | ✅ Completada | 2026-08-15 | rusqlite con WAL, esquema completo, CRUD pacientes/tratamientos/sesiones |
 | 4 | Módulo de gestión de pacientes | ✅ Completada | 2026-08-15 | UI completa con listado, formulario, detalle, búsqueda, paginación |
-| 5 | Sesiones y tratamientos | ⏳ Pendiente | — | — |
+| 5 | Sesiones y tratamientos | ✅ Completada | 2026-08-15 | UI completa con listado, formularios y conexión con pacientes |
 | 6 | Fotos comparativas | ⏳ Pendiente | — | — |
 | 7 | Importador Excel (.xlsx) | ⏳ Pendiente | — | — |
 | 8 | Generación de PDFs clínicos | ⏳ Pendiente | — | — |
