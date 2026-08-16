@@ -55,3 +55,8 @@ pub fn list_photos_by_session(sesion_id: i64) -> Result<Vec<FotoSesion>, String>
     let conn = DatabaseManager::get_conn().map_err(|e| e.to_string())?;
     FotoRepo::list_fotos_by_sesion(&conn, sesion_id).map_err(|e| e.to_string())
 }
+
+pub fn list_photos_by_patient(paciente_id: i64) -> Result<Vec<FotoSesion>, String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string())?;
+    FotoRepo::list_fotos_by_paciente(&conn, paciente_id).map_err(|e| e.to_string())
+}

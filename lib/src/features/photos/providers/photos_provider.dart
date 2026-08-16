@@ -47,3 +47,7 @@ class PhotosNotifier extends StateNotifier<AsyncValue<List<FotoSesion>>> {
 final sessionPhotosProvider = StateNotifierProvider.family<PhotosNotifier, AsyncValue<List<FotoSesion>>, int>((ref, sessionId) {
   return PhotosNotifier(sessionId);
 });
+
+final patientPhotosProvider = FutureProvider.family<List<FotoSesion>, int>((ref, pacienteId) async {
+  return await listPhotosByPatient(pacienteId: pacienteId);
+});

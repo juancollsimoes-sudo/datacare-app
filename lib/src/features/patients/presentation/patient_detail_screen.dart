@@ -1,14 +1,16 @@
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:file_picker/file_picker.dart' as file_picker;
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 import '../../../rust/api/pdf_api.dart';
+import '../../../rust/db/models.dart';
 import '../providers/patients_providers.dart';
 import '../../sessions/providers/sessions_providers.dart';
-
-
+import '../../photos/providers/photos_provider.dart';
 
 class PatientDetailScreen extends ConsumerWidget {
   final String id;
@@ -105,20 +107,7 @@ class PatientDetailScreen extends ConsumerWidget {
                     children: [
                       _buildSessionsCard(context, ref, patientId),
                       const SizedBox(height: 16),
-                      Card(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Galería de Fotos', style: Theme.of(context).textTheme.titleLarge),
-                              const SizedBox(height: 16),
-                              const Text('Las fotografías clínicas se gestionan de forma individual para cada sesión.\n\nHaz clic en una sesión del historial o crea una nueva para subir, ver o comparar fotos de Antes/Después.'),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildPatientGalleryCard(context, ref, patientId.toInt()),
                     ],
                   ),
                 ),
@@ -233,7 +222,14 @@ class PatientDetailScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Historial de Sesiones', style: Theme.of(context).textTheme.titleLarge),
+                Expanded(
+                  child: Text(
+                    'Historial de Sesiones', 
+                    style: Theme.of(context).textTheme.titleLarge,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () => context.push('/sessions/new/$patientId'),
                   icon: const Icon(Icons.add),
@@ -323,4 +319,96 @@ class _InfoCol extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget _buildPatientGalleryCard(BuildContext context, WidgetRef ref, int patientId) {
+  final photosState = ref.watch(patientPhotosProvider(patientId));
+
+  return Card(
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Galería del Paciente', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 16),
+          photosState.when(
+            data: (photos) {
+              if (photos.isEmpty) {
+                return const Text('No hay fotografías asociadas a este paciente en ninguna sesión.');
+              }
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: photos.length,
+                itemBuilder: (context, index) {
+                  final photo = photos[index];
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _openUnifiedGallery(context, photos, index),
+                        child: Hero(
+                          tag: 'patient_${photo.id}',
+                          child: Image.file(
+                            File(photo.rutaThumb ?? photo.rutaFoto),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      if (photo.tipo != null)
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            color: Colors.black54,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              photo.tipo!.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, st) => Text('Error al cargar fotos: $err'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _openUnifiedGallery(BuildContext context, List<FotoSesion> photos, int initialIndex) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => Scaffold(
+        appBar: AppBar(title: const Text('Visor de fotos del paciente')),
+        body: PhotoViewGallery.builder(
+          itemCount: photos.length,
+          builder: (context, index) {
+            return PhotoViewGalleryPageOptions(
+              imageProvider: FileImage(File(photos[index].rutaFoto)),
+              initialScale: PhotoViewComputedScale.contained,
+              heroAttributes: PhotoViewHeroAttributes(tag: 'patient_${photos[index].id}'),
+            );
+          },
+          pageController: PageController(initialPage: initialIndex),
+        ),
+      ),
+    ),
+  );
 }

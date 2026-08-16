@@ -73,7 +73,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -980236252;
+  int get rustContentHash => 776605821;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -128,6 +128,10 @@ abstract class RustLibApi extends BaseApi {
     String? search,
     required int page,
     required int pageSize,
+  });
+
+  Future<List<FotoSesion>> crateApiPhotosApiListPhotosByPatient({
+    required PlatformInt64 pacienteId,
   });
 
   Future<List<FotoSesion>> crateApiPhotosApiListPhotosBySession({
@@ -623,6 +627,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<List<FotoSesion>> crateApiPhotosApiListPhotosByPatient({
+    required PlatformInt64 pacienteId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(pacienteId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_foto_sesion,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiPhotosApiListPhotosByPatientConstMeta,
+        argValues: [pacienteId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPhotosApiListPhotosByPatientConstMeta =>
+      const TaskConstMeta(
+        debugName: "list_photos_by_patient",
+        argNames: ["pacienteId"],
+      );
+
+  @override
   Future<List<FotoSesion>> crateApiPhotosApiListPhotosBySession({
     required PlatformInt64 sesionId,
   }) {
@@ -634,7 +671,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 17,
             port: port_,
           );
         },
@@ -671,7 +708,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 18,
             port: port_,
           );
         },
@@ -701,7 +738,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 19,
             port: port_,
           );
         },
@@ -729,7 +766,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -767,7 +804,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -806,7 +843,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -834,7 +871,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -867,7 +904,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 24,
             port: port_,
           );
         },

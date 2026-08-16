@@ -334,6 +334,30 @@ impl FotoRepo {
         Ok(fotos)
     }
 
+    pub fn list_fotos_by_paciente(conn: &rusqlite::Connection, paciente_id: i64) -> Result<Vec<crate::db::models::FotoSesion>, AppError> {
+        let mut stmt = conn.prepare(
+            "SELECT f.id, f.sesion_id, f.ruta_foto, f.ruta_thumb, f.tipo, f.descripcion, f.created_at
+             FROM fotos_sesion f
+             INNER JOIN sesiones s ON f.sesion_id = s.id
+             WHERE s.paciente_id = ?
+             ORDER BY f.created_at DESC"
+        )?;
+
+        let fotos = stmt.query_map([paciente_id], |row| {
+            Ok(crate::db::models::FotoSesion {
+                id: row.get(0)?,
+                sesion_id: row.get(1)?,
+                ruta_foto: row.get(2)?,
+                ruta_thumb: row.get(3)?,
+                tipo: row.get(4)?,
+                descripcion: row.get(5)?,
+                created_at: row.get(6)?,
+            })
+        })?.collect::<Result<Vec<_>, _>>()?;
+
+        Ok(fotos)
+    }
+
     pub fn insert_foto(conn: &rusqlite::Connection, sesion_id: i64, ruta_foto: &str, ruta_thumb: Option<&str>, tipo: Option<&str>, descripcion: Option<&str>) -> Result<crate::db::models::FotoSesion, AppError> {
         conn.execute(
             "INSERT INTO fotos_sesion (sesion_id, ruta_foto, ruta_thumb, tipo, descripcion)

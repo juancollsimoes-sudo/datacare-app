@@ -31,3 +31,9 @@ Future<List<FotoSesion>> listPhotosBySession({
 }) => RustLib.instance.api.crateApiPhotosApiListPhotosBySession(
   sesionId: sesionId,
 );
+
+Future<List<FotoSesion>> listPhotosByPatient({
+  required PlatformInt64 pacienteId,
+}) => RustLib.instance.api.crateApiPhotosApiListPhotosByPatient(
+  pacienteId: pacienteId,
+);
