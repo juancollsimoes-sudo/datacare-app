@@ -112,7 +112,7 @@ class PatientsActionService {
 
   Future<void> editPatient(ActualizarPaciente paciente) async {
     await updatePaciente(paciente: paciente);
-    ref.invalidate(patientDetailProvider(PlatformInt64Util.from(paciente.id)));
+    ref.invalidate(patientDetailProvider(paciente.id));
     ref.read(patientsProvider.notifier).refresh();
   }
 

@@ -11,7 +11,8 @@ import '../../features/import/presentation/import_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/backup/presentation/backup_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
-import '../../features/patients/presentation/patient_detail_screen.dart'; // We'll mock this
+import '../../features/patients/presentation/patient_detail_screen.dart';
+import '../../features/patients/presentation/patient_form_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -31,8 +32,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const PatientsScreen(),
             routes: [
               GoRoute(
+                path: 'new',
+                builder: (context, state) => const PatientFormScreen(),
+              ),
+              GoRoute(
                 path: ':id',
                 builder: (context, state) => PatientDetailScreen(id: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) => PatientFormScreen(id: state.pathParameters['id']),
+                  ),
+                ],
               ),
             ]
           ),
