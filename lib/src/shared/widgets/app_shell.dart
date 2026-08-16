@@ -81,6 +81,50 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
     final title = _getTitle(selectedIndex);
+    final isDesktop = MediaQuery.sizeOf(context).width >= 800;
+
+    final destinations = const [
+      (Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+      (Icons.people_outline, Icons.people, 'Pacientes'),
+      (Icons.calendar_month_outlined, Icons.calendar_month, 'Sesiones'),
+      (Icons.spa_outlined, Icons.spa, 'Tratamientos'),
+      (Icons.upload_file_outlined, Icons.upload, 'Importar'),
+      (Icons.description_outlined, Icons.description, 'Reportes'),
+      (Icons.backup_outlined, Icons.backup, 'Backups'),
+      (Icons.settings_outlined, Icons.settings, 'Configuración'),
+    ];
+
+    if (!isDesktop) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+        ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              const DrawerHeader(
+                decoration: BoxDecoration(color: Colors.blueGrey),
+                child: Center(
+                  child: Text('DataCare', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              for (int i = 0; i < destinations.length; i++)
+                ListTile(
+                  leading: Icon(selectedIndex == i ? destinations[i].$2 : destinations[i].$1),
+                  title: Text(destinations[i].$3),
+                  selected: selectedIndex == i,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _onDestinationSelected(i, context);
+                  },
+                ),
+            ],
+          ),
+        ),
+        body: widget.child,
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -100,48 +144,11 @@ class _AppShellState extends State<AppShell> {
             extended: _isExtended,
             selectedIndex: selectedIndex,
             onDestinationSelected: (index) => _onDestinationSelected(index, context),
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
-                label: Text('Dashboard'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.people_outline),
-                selectedIcon: Icon(Icons.people),
-                label: Text('Pacientes'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.calendar_month_outlined),
-                selectedIcon: Icon(Icons.calendar_month),
-                label: Text('Sesiones'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.spa_outlined),
-                selectedIcon: Icon(Icons.spa),
-                label: Text('Tratamientos'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.upload_file_outlined),
-                selectedIcon: Icon(Icons.upload),
-                label: Text('Importar'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.description_outlined),
-                selectedIcon: Icon(Icons.description),
-                label: Text('Reportes'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.backup_outlined),
-                selectedIcon: Icon(Icons.backup),
-                label: Text('Backups'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: Text('Configuración'),
-              ),
-            ],
+            destinations: destinations.map((d) => NavigationRailDestination(
+              icon: Icon(d.$1),
+              selectedIcon: Icon(d.$2),
+              label: Text(d.$3),
+            )).toList(),
           ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
