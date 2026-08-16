@@ -48,3 +48,8 @@ app.*.map.json
 rust/target/
 rust/Cargo.lock
 
+
+# Windows Installer Artifacts
+/build/installer/
+/build/DataCare-Windows-Portable-*.zip
+/build/checksums-sha256.txt
