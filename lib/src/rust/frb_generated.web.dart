@@ -6,6 +6,7 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
+import 'api/backup_api.dart';
 import 'api/db_api.dart';
 import 'api/import_api.dart';
 import 'api/pdf_api.dart';

@@ -1,3 +1,4 @@
+import "dart:typed_data";
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,7 +33,7 @@ class PatientDetailScreen extends ConsumerWidget {
             tooltip: 'Exportar a PDF',
             onPressed: () async {
               try {
-                final result = await file_picker.FilePicker.platform.saveFile(
+                final result = await file_picker.FilePicker.saveFile(bytes: Uint8List(0), 
                   dialogTitle: 'Guardar reporte',
                   fileName: 'reporte_paciente_$id.pdf',
                   allowedExtensions: ['pdf'],
@@ -40,7 +41,7 @@ class PatientDetailScreen extends ConsumerWidget {
                 );
                 
                 if (result != null) {
-                  await api_generate_patient_report(pacienteId: patientId, outputPath: result);
+                  await apiGeneratePatientReport(pacienteId: patientId, outputPath: result);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('PDF generado exitosamente')),

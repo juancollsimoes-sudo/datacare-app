@@ -11,6 +11,8 @@ pub enum AppError {
     ValidationError(String),
     #[error("IO error: {0}")]
     IoError(String),
+    #[error("Other error: {0}")]
+    Other(String),
 }
 
 impl AppError {

@@ -15,27 +15,26 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   bool _isLoading = false;
 
   Future<void> _createBackup() async {
-    final outputPath = await FilePicker.platform.saveFile(
-      dialogTitle: 'Guardar Copia de Seguridad',
-      fileName: 'datacare_backup.zip',
-      type: FileType.custom,
-      allowedExtensions: ['zip'],
+    final outputDir = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Seleccionar Carpeta para Copia de Seguridad',
     );
 
-    if (outputPath == null) return;
+    if (outputDir == null) return;
+    
+    final outputPath = '$outputDir/datacare_backup.zip';
 
     setState(() => _isLoading = true);
     try {
       await createBackup(outputPath: outputPath);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Copia de seguridad creada con éxito')),
+          SnackBar(content: Text('Copia de seguridad creada en: $outputPath')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear copia: \$e')),
+          SnackBar(content: Text('Error al crear copia: $e')),
         );
       }
     } finally {
@@ -44,15 +43,17 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   }
 
   Future<void> _restoreBackup() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       dialogTitle: 'Seleccionar Copia de Seguridad',
       type: FileType.custom,
       allowedExtensions: ['zip'],
     );
 
-    if (result == null || result.files.single.path == null) return;
-    final zipPath = result.files.single.path!;
+    if (result == null || result.isEmpty || result.single.path == null) return;
+    final zipPath = result.single.path!;
 
+    if (!mounted) return;
+    
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -102,7 +103,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al restaurar: \$e')),
+          SnackBar(content: Text('Error al restaurar: $e')),
         );
         setState(() => _isLoading = false);
       }

@@ -16,18 +16,18 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
 
   Future<void> _pickAndImport() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
       );
 
-      if (result == null || result.files.single.path == null) {
+      if (result.isEmpty || result.first.path == null) {
         return; // User canceled
       }
 
       setState(() {
         _isLoading = true;
-        _selectedFile = result.files.single.path;
+        _selectedFile = result.first.path;
       });
 
       final importResult = await importPacientesFromExcel(filePath: _selectedFile!);

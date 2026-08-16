@@ -1,6 +1,6 @@
 use crate::db::error::AppError;
 use crate::db::models::{Paciente, Sesion};
-use crate::db::repository::{PacienteRepository, SesionRepository};
+use crate::db::repository::{PacienteRepo, SesionRepo};
 use crate::db::DatabaseManager;
 use printpdf::*;
 use std::fs::File;
@@ -9,22 +9,22 @@ use std::io::BufWriter;
 pub fn generate_patient_report(paciente_id: i64, output_path: String) -> Result<String, AppError> {
     let conn = DatabaseManager::get_conn()?;
     
-    let paciente = PacienteRepository::obtener(&conn, paciente_id)?
+    let paciente = PacienteRepo::obtener(&conn, paciente_id)?
         .ok_or_else(|| AppError::NotFound(format!("Paciente no encontrado con id {}", paciente_id)))?;
         
-    let sesiones = SesionRepository::listar_por_paciente(&conn, paciente_id, 1, 1000)?
+    let sesiones = SesionRepo::listar_por_paciente(&conn, paciente_id, 1, 1000)?
         .items;
         
     let (doc, mut current_page, mut current_layer_id) = PdfDocument::new("Reporte Paciente", Mm(210.0), Mm(297.0), "Layer 1");
     
-    let font = doc.add_builtin_font(BuiltinFont::Helvetica).map_err(|e| AppError::Other(e.to_string()))?;
-    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).map_err(|e| AppError::Other(e.to_string()))?;
+    let font = doc.add_builtin_font(BuiltinFont::Helvetica).map_err(|e| AppError::IoError(e.to_string()))?;
+    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).map_err(|e| AppError::IoError(e.to_string()))?;
     
     let mut current_y = 280.0;
     
     let write_text = |doc: &PdfDocumentReference, page: PdfPageIndex, layer: PdfLayerIndex, text: &str, size: f32, x: f32, y: f32, font: &IndirectFontRef| {
         let current_layer = doc.get_page(page).get_layer(layer);
-        current_layer.use_text(text, size, Mm(x), Mm(y), font);
+        current_layer.use_text(text, size as f64, Mm(x as f64), Mm(y as f64), font);
     };
 
     write_text(&doc, current_page, current_layer_id, "Reporte Clinico", 24.0, 20.0, current_y, &font_bold);
@@ -69,7 +69,7 @@ pub fn generate_patient_report(paciente_id: i64, output_path: String) -> Result<
     }
     
     let mut buf = BufWriter::new(File::create(&output_path).map_err(|e| AppError::IoError(e.to_string()))?);
-    doc.save(&mut buf).map_err(|e| AppError::Other(e.to_string()))?;
+    doc.save(&mut buf).map_err(|e| AppError::IoError(e.to_string()))?;
     
     Ok(output_path)
 }
