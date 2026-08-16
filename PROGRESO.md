@@ -16,7 +16,7 @@
 | 6 | Fotos comparativas | ✅ Completada | 2026-08-15 | Compresión de imagen Rust, File picker y visor de galería implementados |
 | 7 | Importador Excel (.xlsx) | ✅ Completada | 2026-08-15 | calamine en Rust, API importar pacientes 
 | 8 | Generación de PDFs clínicos | ✅ Completada | 2026-08-15 | PDF básico con printpdf |
-| 9 | Backups automáticos | ⏳ Pendiente | — | — |
+| 9 | Backups automáticos | ✅ Completada | 2026-08-15 | Compresión zip en Rust y UI Flutter |
 | 10 | CI/CD GitHub Actions + Inno Setup | ✅ Completada | 2026-08-15 | Workflows CI/CD, Inno Setup, README profesional |
 | 11 | Pulido, testing y hardening | ⏳ Pendiente | — | — |
 
