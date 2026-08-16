@@ -13,6 +13,10 @@ import '../../features/backup/presentation/backup_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/patients/presentation/patient_detail_screen.dart';
 import '../../features/patients/presentation/patient_form_screen.dart';
+import '../../features/treatments/presentation/treatment_form_screen.dart';
+import '../../features/sessions/presentation/session_form_screen.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import '../../rust/db/models.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -50,10 +54,37 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/sessions',
             builder: (context, state) => const SessionsScreen(),
+            routes: [
+              GoRoute(
+                path: 'new/:patientId',
+                builder: (context, state) => SessionFormScreen(
+                  patientId: PlatformInt64.parse(state.pathParameters['patientId']!),
+                ),
+              ),
+              GoRoute(
+                path: 'edit/:patientId',
+                builder: (context, state) => SessionFormScreen(
+                  patientId: PlatformInt64.parse(state.pathParameters['patientId']!),
+                  session: state.extra as Sesion,
+                ),
+              ),
+            ]
           ),
           GoRoute(
             path: '/treatments',
             builder: (context, state) => const TreatmentsScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const TreatmentFormScreen(),
+              ),
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) => TreatmentFormScreen(
+                  treatment: state.extra as Tratamiento,
+                ),
+              ),
+            ]
           ),
           GoRoute(
             path: '/import',

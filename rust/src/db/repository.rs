@@ -307,3 +307,65 @@ impl SesionRepo {
         Ok(())
     }
 }
+
+pub struct FotoRepo;
+
+impl FotoRepo {
+    pub fn list_fotos_by_sesion(conn: &rusqlite::Connection, sesion_id: i64) -> Result<Vec<crate::db::models::FotoSesion>, AppError> {
+        let mut stmt = conn.prepare(
+            "SELECT id, sesion_id, ruta_foto, ruta_thumb, tipo, descripcion, created_at
+             FROM fotos_sesion
+             WHERE sesion_id = ?
+             ORDER BY created_at DESC"
+        )?;
+
+        let fotos = stmt.query_map([sesion_id], |row| {
+            Ok(crate::db::models::FotoSesion {
+                id: row.get(0)?,
+                sesion_id: row.get(1)?,
+                ruta_foto: row.get(2)?,
+                ruta_thumb: row.get(3)?,
+                tipo: row.get(4)?,
+                descripcion: row.get(5)?,
+                created_at: row.get(6)?,
+            })
+        })?.collect::<Result<Vec<_>, _>>()?;
+
+        Ok(fotos)
+    }
+
+    pub fn insert_foto(conn: &rusqlite::Connection, sesion_id: i64, ruta_foto: &str, ruta_thumb: Option<&str>, tipo: Option<&str>, descripcion: Option<&str>) -> Result<crate::db::models::FotoSesion, AppError> {
+        conn.execute(
+            "INSERT INTO fotos_sesion (sesion_id, ruta_foto, ruta_thumb, tipo, descripcion)
+             VALUES (?, ?, ?, ?, ?)",
+            rusqlite::params![sesion_id, ruta_foto, ruta_thumb, tipo, descripcion],
+        )?;
+
+        let id = conn.last_insert_rowid();
+        Self::get_foto(conn, id)
+    }
+
+    pub fn get_foto(conn: &rusqlite::Connection, id: i64) -> Result<crate::db::models::FotoSesion, AppError> {
+        conn.query_row(
+            "SELECT id, sesion_id, ruta_foto, ruta_thumb, tipo, descripcion, created_at
+             FROM fotos_sesion WHERE id = ?",
+            [id],
+            |row| {
+                Ok(crate::db::models::FotoSesion {
+                    id: row.get(0)?,
+                    sesion_id: row.get(1)?,
+                    ruta_foto: row.get(2)?,
+                    ruta_thumb: row.get(3)?,
+                    tipo: row.get(4)?,
+                    descripcion: row.get(5)?,
+                    created_at: row.get(6)?,
+                })
+            },
+        ).map_err(Into::into)
+    }
+
+    pub fn delete_foto(conn: &rusqlite::Connection, id: i64) -> Result<(), AppError> {
+        conn.execute("DELETE FROM fotos_sesion WHERE id = ?", [id])?;
+        Ok(())
+    }
+}

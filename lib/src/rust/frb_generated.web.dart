@@ -7,6 +7,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/db_api.dart';
+import 'api/photos_api.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -73,10 +74,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double dco_decode_f_64(dynamic raw);
 
   @protected
+  FotoSesion dco_decode_foto_sesion(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
   PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  List<FotoSesion> dco_decode_list_foto_sesion(dynamic raw);
 
   @protected
   List<Paciente> dco_decode_list_paciente(dynamic raw);
@@ -198,10 +205,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
+  FotoSesion sse_decode_foto_sesion(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+
+  @protected
+  List<FotoSesion> sse_decode_list_foto_sesion(SseDeserializer deserializer);
 
   @protected
   List<Paciente> sse_decode_list_paciente(SseDeserializer deserializer);
@@ -341,10 +354,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
+  void sse_encode_foto_sesion(FotoSesion self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_foto_sesion(
+    List<FotoSesion> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_paciente(List<Paciente> self, SseSerializer serializer);

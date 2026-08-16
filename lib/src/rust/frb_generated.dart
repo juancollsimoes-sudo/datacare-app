@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/db_api.dart';
+import 'api/photos_api.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -68,7 +69,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 2027713919;
+  int get rustContentHash => -59986388;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -94,6 +95,8 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiDbApiDeactivatePaciente({required PlatformInt64 id});
 
+  Future<void> crateApiPhotosApiDeletePhoto({required PlatformInt64 fotoId});
+
   Future<Paciente?> crateApiDbApiGetPaciente({required PlatformInt64 id});
 
   Future<Sesion?> crateApiDbApiGetSesion({required PlatformInt64 id});
@@ -110,6 +113,10 @@ abstract class RustLibApi extends BaseApi {
     required int pageSize,
   });
 
+  Future<List<FotoSesion>> crateApiPhotosApiListPhotosBySession({
+    required PlatformInt64 sesionId,
+  });
+
   Future<PaginatedSesiones> crateApiDbApiListSesionesByPaciente({
     required PlatformInt64 pacienteId,
     required int page,
@@ -117,6 +124,14 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<List<Tratamiento>> crateApiDbApiListTratamientos();
+
+  Future<FotoSesion> crateApiPhotosApiSaveSessionPhoto({
+    required PlatformInt64 pacienteId,
+    required PlatformInt64 sesionId,
+    required String inputPath,
+    String? tipo,
+    String? descripcion,
+  });
 
   Future<void> crateApiDbApiUpdatePaciente({
     required ActualizarPaciente paciente,
@@ -259,6 +274,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "deactivate_paciente", argNames: ["id"]);
 
   @override
+  Future<void> crateApiPhotosApiDeletePhoto({required PlatformInt64 fotoId}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(fotoId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiPhotosApiDeletePhotoConstMeta,
+        argValues: [fotoId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPhotosApiDeletePhotoConstMeta =>
+      const TaskConstMeta(debugName: "delete_photo", argNames: ["fotoId"]);
+
+  @override
   Future<Paciente?> crateApiDbApiGetPaciente({required PlatformInt64 id}) {
     return handler.executeNormal(
       NormalTask(
@@ -268,7 +311,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -296,7 +339,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -321,7 +364,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -346,7 +389,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 9,
             port: port_,
           );
         },
@@ -374,7 +417,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 10,
             port: port_,
           );
         },
@@ -408,7 +451,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 11,
             port: port_,
           );
         },
@@ -429,6 +472,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<List<FotoSesion>> crateApiPhotosApiListPhotosBySession({
+    required PlatformInt64 sesionId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(sesionId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_foto_sesion,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiPhotosApiListPhotosBySessionConstMeta,
+        argValues: [sesionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPhotosApiListPhotosBySessionConstMeta =>
+      const TaskConstMeta(
+        debugName: "list_photos_by_session",
+        argNames: ["sesionId"],
+      );
+
+  @override
   Future<PaginatedSesiones> crateApiDbApiListSesionesByPaciente({
     required PlatformInt64 pacienteId,
     required int page,
@@ -444,7 +520,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 13,
             port: port_,
           );
         },
@@ -474,7 +550,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 14,
             port: port_,
           );
         },
@@ -493,6 +569,53 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "list_tratamientos", argNames: []);
 
   @override
+  Future<FotoSesion> crateApiPhotosApiSaveSessionPhoto({
+    required PlatformInt64 pacienteId,
+    required PlatformInt64 sesionId,
+    required String inputPath,
+    String? tipo,
+    String? descripcion,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(pacienteId, serializer);
+          sse_encode_i_64(sesionId, serializer);
+          sse_encode_String(inputPath, serializer);
+          sse_encode_opt_String(tipo, serializer);
+          sse_encode_opt_String(descripcion, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_foto_sesion,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiPhotosApiSaveSessionPhotoConstMeta,
+        argValues: [pacienteId, sesionId, inputPath, tipo, descripcion],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPhotosApiSaveSessionPhotoConstMeta =>
+      const TaskConstMeta(
+        debugName: "save_session_photo",
+        argNames: [
+          "pacienteId",
+          "sesionId",
+          "inputPath",
+          "tipo",
+          "descripcion",
+        ],
+      );
+
+  @override
   Future<void> crateApiDbApiUpdatePaciente({
     required ActualizarPaciente paciente,
   }) {
@@ -504,7 +627,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 16,
             port: port_,
           );
         },
@@ -532,7 +655,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 17,
             port: port_,
           );
         },
@@ -565,7 +688,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 18,
             port: port_,
           );
         },
@@ -720,6 +843,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  FotoSesion dco_decode_foto_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return FotoSesion(
+      id: dco_decode_i_64(arr[0]),
+      sesionId: dco_decode_i_64(arr[1]),
+      rutaFoto: dco_decode_String(arr[2]),
+      rutaThumb: dco_decode_opt_String(arr[3]),
+      tipo: dco_decode_opt_String(arr[4]),
+      descripcion: dco_decode_opt_String(arr[5]),
+      createdAt: dco_decode_String(arr[6]),
+    );
+  }
+
+  @protected
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -729,6 +869,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 dco_decode_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeI64(raw);
+  }
+
+  @protected
+  List<FotoSesion> dco_decode_list_foto_sesion(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_foto_sesion).toList();
   }
 
   @protected
@@ -1097,6 +1243,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  FotoSesion sse_decode_foto_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_sesionId = sse_decode_i_64(deserializer);
+    var var_rutaFoto = sse_decode_String(deserializer);
+    var var_rutaThumb = sse_decode_opt_String(deserializer);
+    var var_tipo = sse_decode_opt_String(deserializer);
+    var var_descripcion = sse_decode_opt_String(deserializer);
+    var var_createdAt = sse_decode_String(deserializer);
+    return FotoSesion(
+      id: var_id,
+      sesionId: var_sesionId,
+      rutaFoto: var_rutaFoto,
+      rutaThumb: var_rutaThumb,
+      tipo: var_tipo,
+      descripcion: var_descripcion,
+      createdAt: var_createdAt,
+    );
+  }
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
@@ -1106,6 +1273,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getPlatformInt64();
+  }
+
+  @protected
+  List<FotoSesion> sse_decode_list_foto_sesion(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FotoSesion>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_foto_sesion(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -1541,6 +1720,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_foto_sesion(FotoSesion self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_i_64(self.sesionId, serializer);
+    sse_encode_String(self.rutaFoto, serializer);
+    sse_encode_opt_String(self.rutaThumb, serializer);
+    sse_encode_opt_String(self.tipo, serializer);
+    sse_encode_opt_String(self.descripcion, serializer);
+    sse_encode_String(self.createdAt, serializer);
+  }
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
@@ -1550,6 +1741,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putPlatformInt64(self);
+  }
+
+  @protected
+  void sse_encode_list_foto_sesion(
+    List<FotoSesion> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_foto_sesion(item, serializer);
+    }
   }
 
   @protected

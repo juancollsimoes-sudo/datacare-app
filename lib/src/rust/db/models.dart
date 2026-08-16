@@ -143,6 +143,49 @@ class ActualizarTratamiento {
           precio == other.precio;
 }
 
+class FotoSesion {
+  final PlatformInt64 id;
+  final PlatformInt64 sesionId;
+  final String rutaFoto;
+  final String? rutaThumb;
+  final String? tipo;
+  final String? descripcion;
+  final String createdAt;
+
+  const FotoSesion({
+    required this.id,
+    required this.sesionId,
+    required this.rutaFoto,
+    this.rutaThumb,
+    this.tipo,
+    this.descripcion,
+    required this.createdAt,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      sesionId.hashCode ^
+      rutaFoto.hashCode ^
+      rutaThumb.hashCode ^
+      tipo.hashCode ^
+      descripcion.hashCode ^
+      createdAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FotoSesion &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          sesionId == other.sesionId &&
+          rutaFoto == other.rutaFoto &&
+          rutaThumb == other.rutaThumb &&
+          tipo == other.tipo &&
+          descripcion == other.descripcion &&
+          createdAt == other.createdAt;
+}
+
 class NuevaSesion {
   final PlatformInt64 pacienteId;
   final PlatformInt64? tratamientoId;

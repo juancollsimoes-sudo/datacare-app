@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import '../providers/patients_providers.dart';
+import '../../sessions/providers/sessions_providers.dart';
+import '../../../rust/db/models.dart';
+
 
 class PatientDetailScreen extends ConsumerWidget {
   final String id;
@@ -68,21 +71,7 @@ class PatientDetailScreen extends ConsumerWidget {
                   flex: 2,
                   child: Column(
                     children: [
-                      // Placeholder para historial de sesiones
-                      Card(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Historial de Sesiones (Próximamente)', style: Theme.of(context).textTheme.titleLarge),
-                              const SizedBox(height: 16),
-                              const Text('Aquí se mostrará el historial de sesiones en la Etapa 5.'),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildSessionsCard(context, ref, patientId),
                       const SizedBox(height: 16),
                       // Placeholder para galería de fotos
                       Card(
@@ -199,7 +188,61 @@ class PatientDetailScreen extends ConsumerWidget {
       }
     }
   }
+
+  Widget _buildSessionsCard(BuildContext context, WidgetRef ref, PlatformInt64 patientId) {
+    final sessionsState = ref.watch(patientSessionsProvider(patientId));
+
+    return Card(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Historial de Sesiones', style: Theme.of(context).textTheme.titleLarge),
+                ElevatedButton.icon(
+                  onPressed: () => context.push('/sessions/new/$patientId'),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nueva Sesión'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            sessionsState.when(
+              data: (data) {
+                if (data.items.isEmpty) {
+                  return const Text('No hay sesiones registradas para este paciente.');
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: data.items.length,
+                  itemBuilder: (context, index) {
+                    final sesion = data.items[index];
+                    return ListTile(
+                      title: Text('Fecha: ${sesion.fecha}'),
+                      subtitle: Text('Cobrado: \$${sesion.precioCobrado?.toStringAsFixed(2) ?? '0.00'} | Pagado: ${sesion.pagado ? 'Sí' : 'No'}'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        context.push('/sessions/edit/$patientId', extra: sesion);
+                      },
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, st) => Text('Error al cargar sesiones: $err'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
