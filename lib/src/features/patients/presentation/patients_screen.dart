@@ -85,58 +85,62 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                   return Card(
                     clipBehavior: Clip.antiAlias,
                     child: SingleChildScrollView(
-                      child: DataTable(
-                        showCheckboxColumn: false,
-                        columns: const [
-                          DataColumn(label: Text('Nombre')),
-                          DataColumn(label: Text('Teléfono')),
-                          DataColumn(label: Text('Email')),
-                          DataColumn(label: Text('Registro')),
-                          DataColumn(label: Text('Estado')),
-                          DataColumn(label: Text('Acciones')),
-                        ],
-                        rows: data.items.map((paciente) {
-                          return DataRow(
-                            onSelectChanged: (_) => context.go('/patients/${paciente.id}'),
-                            cells: [
-                              DataCell(Text('${paciente.nombre} ${paciente.apellido}')),
-                              DataCell(Text(paciente.telefono ?? '-')),
-                              DataCell(Text(paciente.email ?? '-')),
-                              DataCell(Text(paciente.fechaRegistro.split('T').first)),
-                              DataCell(
-                                Chip(
-                                  label: Text(paciente.activo ? 'Activo' : 'Inactivo'),
-                                  color: WidgetStatePropertyAll(paciente.activo ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1)),
-                                  labelStyle: TextStyle(
-                                    color: paciente.activo ? Colors.green : Colors.red,
-                                    fontSize: 12,
-                                  ),
-                                  side: BorderSide.none,
-                                ),
-                              ),
-                              DataCell(
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () => context.go('/patients/${paciente.id}/edit'),
-                                      tooltip: 'Editar',
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          showCheckboxColumn: false,
+                          columns: const [
+                            DataColumn(label: Text('Nombre')),
+                            DataColumn(label: Text('Teléfono')),
+                            DataColumn(label: Text('Email')),
+                            DataColumn(label: Text('Registro')),
+                            DataColumn(label: Text('Estado')),
+                            DataColumn(label: Text('Acciones')),
+                          ],
+                          rows: data.items.map((paciente) {
+                            return DataRow(
+                              onSelectChanged: (_) => context.go('/patients/${paciente.id}'),
+                              cells: [
+                                DataCell(Text('${paciente.nombre} ${paciente.apellido}')),
+                                DataCell(Text(paciente.telefono ?? '-')),
+                                DataCell(Text(paciente.email ?? '-')),
+                                DataCell(Text(paciente.fechaRegistro.split('T').first)),
+                                DataCell(
+                                  Chip(
+                                    label: Text(paciente.activo ? 'Activo' : 'Inactivo'),
+                                    color: WidgetStatePropertyAll(paciente.activo ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1)),
+                                    labelStyle: TextStyle(
+                                      color: paciente.activo ? Colors.green : Colors.red,
+                                      fontSize: 12,
                                     ),
-                                    if (paciente.activo)
-                                      IconButton(
-                                        icon: const Icon(Icons.person_off, size: 20),
-                                        onPressed: () {
-                                          _confirmDeactivate(context, paciente.id, '${paciente.nombre} ${paciente.apellido}');
-                                        },
-                                        tooltip: 'Desactivar',
-                                      ),
-                                  ],
+                                    side: BorderSide.none,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, size: 20),
+                                        onPressed: () => context.go('/patients/${paciente.id}/edit'),
+                                        tooltip: 'Editar',
+                                      ),
+                                      if (paciente.activo)
+                                        IconButton(
+                                          icon: const Icon(Icons.person_off, size: 20),
+                                          onPressed: () {
+                                            _confirmDeactivate(context, paciente.id, '${paciente.nombre} ${paciente.apellido}');
+                                          },
+                                          tooltip: 'Desactivar',
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                   );

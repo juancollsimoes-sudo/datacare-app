@@ -95,34 +95,45 @@ class PatientDetailScreen extends ConsumerWidget {
             return const Center(child: Text('Paciente no encontrado'));
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    children: [
-                      _buildPersonalInfoCard(context, patient),
-                      const SizedBox(height: 16),
-                      _buildClinicalInfoCard(context, patient),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      _buildSessionsCard(context, ref, patientId),
-                      const SizedBox(height: 16),
-                      _buildPatientGalleryCard(context, ref, patientId),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= 800;
+              final col1 = Column(
+                children: [
+                  _buildPersonalInfoCard(context, patient),
+                  const SizedBox(height: 16),
+                  _buildClinicalInfoCard(context, patient),
+                ],
+              );
+              final col2 = Column(
+                children: [
+                  _buildSessionsCard(context, ref, patientId),
+                  const SizedBox(height: 16),
+                  _buildPatientGalleryCard(context, ref, patientId),
+                ],
+              );
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: isDesktop
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 1, child: col1),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 2, child: col2),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          col1,
+                          const SizedBox(height: 16),
+                          col2,
+                        ],
+                      ),
+              );
+            },
           );
         },
       ),
@@ -351,8 +362,8 @@ Widget _buildPatientGalleryCard(BuildContext context, WidgetRef ref, PlatformInt
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 200,
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
                 ),
