@@ -204,8 +204,7 @@ class WebApiClient implements ApiClient {
     required int page,
     required int pageSize,
   }) async {
-    final uri = Uri.parse('$baseUrl/sesiones').replace(queryParameters: {
-      'pacienteId': pacienteId.toInt().toString(),
+    final uri = Uri.parse('$baseUrl/pacientes/${pacienteId.toInt()}/sesiones').replace(queryParameters: {
       'page': page.toString(),
       'pageSize': pageSize.toString(),
     });
@@ -260,7 +259,7 @@ class WebApiClient implements ApiClient {
   // Dashboard
   @override
   Future<DashboardStats> getDashboardStats() async {
-    final uri = Uri.parse('$baseUrl/dashboard/stats');
+    final uri = Uri.parse('$baseUrl/stats');
     final response = await http.get(uri);
     if (response.statusCode == 200) {
       return _parseDashboardStats(jsonDecode(response.body));
@@ -307,7 +306,7 @@ class WebApiClient implements ApiClient {
 
   @override
   Future<List<FotoSesion>> listPhotosBySession({required PlatformInt64 sesionId}) async {
-    final uri = Uri.parse('$baseUrl/fotos').replace(queryParameters: {'sesionId': sesionId.toInt().toString()});
+    final uri = Uri.parse('$baseUrl/sesiones/${sesionId.toInt()}/fotos');
     final response = await http.get(uri);
     if (response.statusCode == 200) {
       return (jsonDecode(response.body) as List).map((i) => _parseFotoSesion(i)).toList();
@@ -317,7 +316,7 @@ class WebApiClient implements ApiClient {
 
   @override
   Future<List<FotoSesion>> listPhotosByPatient({required PlatformInt64 pacienteId}) async {
-    final uri = Uri.parse('$baseUrl/fotos').replace(queryParameters: {'pacienteId': pacienteId.toInt().toString()});
+    final uri = Uri.parse('$baseUrl/pacientes/${pacienteId.toInt()}/fotos');
     final response = await http.get(uri);
     if (response.statusCode == 200) {
       return (jsonDecode(response.body) as List).map((i) => _parseFotoSesion(i)).toList();
