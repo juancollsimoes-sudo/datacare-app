@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'DataCare';
-  static const String appVersion = 'v1.0.0';
+  static const String appVersion = 'v1.0.1';
   
   // Color de marca (verde azulado profesional)
   static const Color brandColor = Color(0xFF2E7D6F);
