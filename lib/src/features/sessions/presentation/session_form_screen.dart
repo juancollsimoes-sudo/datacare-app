@@ -5,6 +5,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import '../providers/sessions_providers.dart';
 import '../../treatments/providers/treatments_providers.dart';
 import '../../../rust/db/models.dart';
+import '../../photos/presentation/session_gallery_widget.dart' as import_photos;
 
 class SessionFormScreen extends ConsumerStatefulWidget {
   final PlatformInt64 patientId;
@@ -205,6 +206,15 @@ class _SessionFormScreenState extends ConsumerState<SessionFormScreen> {
                 onPressed: _saveSession,
                 child: const Text('Guardar'),
               ),
+              if (isEditing) ...[
+                const SizedBox(height: 32),
+                const Divider(),
+                const SizedBox(height: 16),
+                import_photos.SessionGalleryWidget(
+                  sessionId: widget.session!.id.toInt(),
+                  pacienteId: widget.patientId.toInt(),
+                ),
+              ],
             ],
           ),
         ),
