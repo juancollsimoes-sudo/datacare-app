@@ -15,6 +15,7 @@ class PatientsScreen extends ConsumerStatefulWidget {
 class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
+  final Set<PlatformInt64> _selectedPatients = {};
 
   @override
   void dispose() {
@@ -46,20 +47,38 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Search Bar
-            SearchBar(
-              controller: _searchController,
-              hintText: 'Buscar paciente por nombre o apellido...',
-              leading: const Icon(Icons.search),
-              onChanged: _onSearchChanged,
-              trailing: [
-                if (_searchController.text.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      _onSearchChanged('');
-                    },
-                  )
+            Row(
+              children: [
+                Expanded(
+                  child: SearchBar(
+                    controller: _searchController,
+                    hintText: 'Buscar paciente por nombre o apellido...',
+                    leading: const Icon(Icons.search),
+                    onChanged: _onSearchChanged,
+                    trailing: [
+                      if (_searchController.text.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearchChanged('');
+                          },
+                        )
+                    ],
+                  ),
+                ),
+                if (_selectedPatients.isNotEmpty) ...[
+                  const SizedBox(width: 16),
+                  FilledButton.icon(
+                    onPressed: () => _confirmBulkDeactivate(context),
+                    icon: const Icon(Icons.group_off),
+                    label: Text('Desactivar ${_selectedPatients.length}'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 24),
@@ -89,7 +108,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          showCheckboxColumn: false,
+                          showCheckboxColumn: true,
                           columns: const [
                             DataColumn(label: Text('Nombre')),
                             DataColumn(label: Text('Teléfono')),
@@ -100,9 +119,29 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                           ],
                           rows: data.items.map((paciente) {
                             return DataRow(
-                              onSelectChanged: (_) => context.go('/patients/${paciente.id}'),
+                              selected: _selectedPatients.contains(paciente.id),
+                              onSelectChanged: (selected) {
+                                if (selected != null) {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedPatients.add(paciente.id);
+                                    } else {
+                                      _selectedPatients.remove(paciente.id);
+                                    }
+                                  });
+                                }
+                              },
                               cells: [
-                                DataCell(Text('${paciente.nombre} ${paciente.apellido}')),
+                                DataCell(
+                                  Text(
+                                    '${paciente.nombre} ${paciente.apellido}',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                  onTap: () => context.go('/patients/${paciente.id}'),
+                                ),
                                 DataCell(Text(paciente.telefono ?? '-')),
                                 DataCell(Text(paciente.email ?? '-')),
                                 DataCell(Text(paciente.fechaRegistro.split('T').first)),
@@ -209,6 +248,35 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
     if (confirm == true) {
       await ref.read(patientsActionProvider).deactivate(id);
+    }
+  }
+
+  Future<void> _confirmBulkDeactivate(BuildContext context) async {
+    final count = _selectedPatients.length;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Desactivar Pacientes'),
+        content: Text('¿Estás seguro de que deseas desactivar $count pacientes seleccionados?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Desactivar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ref.read(patientsActionProvider).bulkDeactivate(_selectedPatients.toList());
+      setState(() {
+        _selectedPatients.clear();
+      });
     }
   }
 }

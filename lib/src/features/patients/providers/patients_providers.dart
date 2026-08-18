@@ -126,4 +126,13 @@ class PatientsActionService {
     ref.invalidate(patientDetailProvider(id));
     ref.read(patientsProvider.notifier).refresh();
   }
+
+  Future<void> bulkDeactivate(List<PlatformInt64> ids) async {
+    final apiClient = ref.read(apiClientProvider);
+    for (final id in ids) {
+      await apiClient.deactivatePaciente(id: id);
+      ref.invalidate(patientDetailProvider(id));
+    }
+    ref.read(patientsProvider.notifier).refresh();
+  }
 }
