@@ -102,16 +102,13 @@ fn parse_text_date(text: &str) -> Option<String> {
     Some(text.to_string())
 }
 
-/// Parse the sex field from cells J11/K11.
-/// J11 contains "F" or "F X" for female, K11 contains "M" or "M X" for male.
-fn parse_sexo(range: &calamine::Range<Data>) -> Option<String> {
-    // Row 11 = index 10 (0-based), J = col 9, K = col 10
-    let j11 = cell_str(range, 10, 9).unwrap_or_default().to_uppercase();
-    let k11 = cell_str(range, 10, 10).unwrap_or_default().to_uppercase();
+fn parse_sexo(range: &calamine::Range<Data>, base_row: u32) -> Option<String> {
+    // Row 11 (index 10) -> base_row + 1
+    let row_idx = base_row + 1;
+    let j11 = cell_str(range, row_idx, 9).unwrap_or_default().to_uppercase();
+    let k11 = cell_str(range, row_idx, 10).unwrap_or_default().to_uppercase();
 
-    // Check if either cell contains an X marking
     if j11.contains('X') || (j11.contains('F') && !k11.contains('X')) {
-        // Female is marked
         if j11.contains('X') || j11.contains('F') {
             return Some("Femenino".to_string());
         }
@@ -125,25 +122,19 @@ fn parse_sexo(range: &calamine::Range<Data>) -> Option<String> {
     None
 }
 
-/// Build condiciones_medicas by checking rows 18-24 for labels and X marks.
-fn build_condiciones_medicas(range: &calamine::Range<Data>) -> Option<String> {
+fn build_condiciones_medicas(range: &calamine::Range<Data>, base_row: u32) -> Option<String> {
     let mut conditions = Vec::new();
 
-    // Rows 18-24 (0-based: 17-23)
-    // Column A (0) has labels, and adjacent columns may have X marks
-    // Column G (6) may also have labels with adjacent X marks
-    for row in 17..=23 {
-        // Check column A label + column B or C for X
+    // Las filas clínicas usualmente están a partir de base_row + 8 (ej base_row 9 -> fila 17)
+    let start_row = base_row + 8;
+    for row in start_row..=start_row + 6 {
         if let Some(label) = cell_str(range, row, 0) {
             if !label.is_empty() {
-                // Check columns B(1), C(2) for X mark
                 if cell_has_x(range, row, 1) || cell_has_x(range, row, 2) {
                     conditions.push(label);
                 }
             }
         }
-
-        // Check column D(3) or E(4) label + adjacent for X
         if let Some(label) = cell_str(range, row, 3) {
             if !label.is_empty() && !label.trim().eq_ignore_ascii_case("x") {
                 if cell_has_x(range, row, 4) || cell_has_x(range, row, 5) {
@@ -151,8 +142,6 @@ fn build_condiciones_medicas(range: &calamine::Range<Data>) -> Option<String> {
                 }
             }
         }
-
-        // Check column G(6) label + column H(7) for X
         if let Some(label) = cell_str(range, row, 6) {
             if !label.is_empty() && !label.trim().eq_ignore_ascii_case("x") {
                 if cell_has_x(range, row, 7) || cell_has_x(range, row, 8) {
@@ -162,8 +151,8 @@ fn build_condiciones_medicas(range: &calamine::Range<Data>) -> Option<String> {
         }
     }
 
-    // Rows 16-17 (0-based: 15-16) - additional clinical data
-    for row in 15..=16 {
+    // Filas anteriores
+    for row in (start_row - 2)..start_row {
         if let Some(label) = cell_str(range, row, 0) {
             if !label.is_empty() {
                 if cell_has_x(range, row, 1) || cell_has_x(range, row, 2) {
@@ -187,18 +176,16 @@ fn build_condiciones_medicas(range: &calamine::Range<Data>) -> Option<String> {
     }
 }
 
-/// Build notas_generales from diagnostic info, plan terapéutico, tattoos, and cosmetic habits.
-fn build_notas_generales(range: &calamine::Range<Data>) -> Option<String> {
+fn build_notas_generales(range: &calamine::Range<Data>, base_row: u32) -> Option<String> {
     let mut notas_parts = Vec::new();
 
-    // Diagnostic info: columns M-U (12-20), rows 11-14 (0-based: 10-13)
+    // Diagnostic info: rows base_row + 1 to base_row + 4
     let mut diagnostics = Vec::new();
-    for row in 10..=13 {
+    for row in (base_row + 1)..=(base_row + 4) {
         for col in 12..=20 {
             if let Some(label) = cell_str(range, row, col) {
                 let label_trimmed = label.trim();
                 if !label_trimmed.is_empty() && !label_trimmed.eq_ignore_ascii_case("x") {
-                    // Check if the next column has an X mark
                     if col + 1 <= 20 && cell_has_x(range, row, col + 1) {
                         diagnostics.push(label_trimmed.to_string());
                     }
@@ -210,27 +197,21 @@ fn build_notas_generales(range: &calamine::Range<Data>) -> Option<String> {
         notas_parts.push(format!("Diagnósticos: {}", diagnostics.join(", ")));
     }
 
-    // Plan terapéutico: N24-N25 (0-based: rows 23-24, col 13)
+    // Plan terapéutico: base_row + 14 and base_row + 15
     let mut plan = Vec::new();
-    if let Some(p1) = cell_str(range, 23, 13) {
-        plan.push(p1);
-    }
-    if let Some(p2) = cell_str(range, 24, 13) {
-        plan.push(p2);
-    }
+    if let Some(p1) = cell_str(range, base_row + 14, 13) { plan.push(p1); }
+    if let Some(p2) = cell_str(range, base_row + 15, 13) { plan.push(p2); }
     if !plan.is_empty() {
         notas_parts.push(format!("Plan terapéutico: {}", plan.join(" ")));
     }
 
-    // Tattoos and plastic surgery: rows 27-28 (0-based: 26-27)
+    // Tattoos and plastic surgery: base_row + 17 and base_row + 18
     let mut body_mods = Vec::new();
-    for row in 26..=27 {
+    for row in (base_row + 17)..=(base_row + 18) {
         if let Some(label) = cell_str(range, row, 0) {
             let label_trimmed = label.trim();
             if !label_trimmed.is_empty() {
-                // Check for SI/NO marks in adjacent cells
-                let has_si = cell_has_x(range, row, 1) || cell_has_x(range, row, 2);
-                if has_si {
+                if cell_has_x(range, row, 1) || cell_has_x(range, row, 2) {
                     body_mods.push(format!("{}: Sí", label_trimmed));
                 }
             }
@@ -240,10 +221,9 @@ fn build_notas_generales(range: &calamine::Range<Data>) -> Option<String> {
         notas_parts.push(body_mods.join(", "));
     }
 
-    // Cosmetic habits: rows 34-36 (0-based: 33-35)
+    // Cosmetic habits: base_row + 24 to base_row + 26
     let mut habits = Vec::new();
-    for row in 33..=35 {
-        // Collect any non-empty text across columns A-H
+    for row in (base_row + 24)..=(base_row + 26) {
         let mut row_text = Vec::new();
         for col in 0..=8 {
             if let Some(val) = cell_str(range, row, col) {
@@ -261,69 +241,49 @@ fn build_notas_generales(range: &calamine::Range<Data>) -> Option<String> {
         notas_parts.push(format!("Hábitos cosméticos: {}", habits.join("; ")));
     }
 
-    // Sexo
-    if let Some(sexo) = parse_sexo(range) {
+    if let Some(sexo) = parse_sexo(range, base_row) {
         notas_parts.push(format!("Sexo: {}", sexo));
     }
 
-    if notas_parts.is_empty() {
-        None
-    } else {
-        Some(notas_parts.join("\n"))
-    }
+    if notas_parts.is_empty() { None } else { Some(notas_parts.join("\n")) }
 }
 
-/// Parse sessions starting from row 38 (0-based: 37).
-/// When column A has a date, start a new session.
-/// Concatenate all column B text until the next date row.
-fn parse_sessions(range: &calamine::Range<Data>) -> Vec<ParsedSession> {
+fn parse_sessions(range: &calamine::Range<Data>, base_row: u32) -> Vec<ParsedSession> {
     let mut sessions = Vec::new();
     let (max_row, _max_col) = range.end().unwrap_or((0, 0));
 
     let mut current_date: Option<String> = None;
     let mut current_desc = Vec::new();
 
-    for row in 37..=max_row as u32 {
+    let start_row = base_row + 28; // Usually row 38 (index 37) if base_row is 9
+    for row in start_row..=max_row as u32 {
         let col_a = cell_str(range, row, 0);
 
-        // Check if column A has a date value
         let is_date_row = if let Some(ref val) = col_a {
-            // Check if it looks like a date: contains separators or is a formatted date
             let trimmed = val.trim();
             !trimmed.is_empty() && (
                 trimmed.contains('-') ||
                 trimmed.contains('/') ||
                 trimmed.contains('.') ||
-                // Also matches YYYY-MM-DD format already formatted by cell_str
                 (trimmed.len() >= 6 && trimmed.chars().any(|c| c.is_ascii_digit()))
             )
         } else {
-            // Also check if the raw cell is a DateTime type
             if let Some(cell) = range.get_value((row, 0)) {
                 matches!(cell, Data::DateTime(_) | Data::DateTimeIso(_))
-            } else {
-                false
-            }
+            } else { false }
         };
 
         if is_date_row {
-            // Save previous session if exists
             if let Some(date) = current_date.take() {
                 let desc = current_desc.join("\n").trim().to_string();
                 if !desc.is_empty() {
-                    sessions.push(ParsedSession {
-                        fecha: date,
-                        descripcion: desc,
-                    });
+                    sessions.push(ParsedSession { fecha: date, descripcion: desc });
                 }
                 current_desc.clear();
             }
 
-            // Start new session
             let date_str = col_a.unwrap_or_default();
-            // Try to format as YYYY-MM-DD
             let formatted_date = if date_str.contains('-') && date_str.len() == 10 && date_str.starts_with(|c: char| c.is_ascii_digit()) {
-                // Already YYYY-MM-DD
                 date_str
             } else {
                 parse_text_date(&date_str).unwrap_or(date_str)
@@ -331,26 +291,20 @@ fn parse_sessions(range: &calamine::Range<Data>) -> Vec<ParsedSession> {
 
             current_date = Some(formatted_date);
 
-            // Also grab column B text from this row
             if let Some(desc) = cell_str(range, row, 1) {
                 current_desc.push(desc);
             }
         } else if current_date.is_some() {
-            // No date in column A — append column B text to current session
             if let Some(desc) = cell_str(range, row, 1) {
                 current_desc.push(desc);
             }
         }
     }
 
-    // Don't forget the last session
     if let Some(date) = current_date {
         let desc = current_desc.join("\n").trim().to_string();
         if !desc.is_empty() {
-            sessions.push(ParsedSession {
-                fecha: date,
-                descripcion: desc,
-            });
+            sessions.push(ParsedSession { fecha: date, descripcion: desc });
         }
     }
 
@@ -386,21 +340,29 @@ pub fn parse_excel(file_path: String) -> Result<Vec<ParsedPatient>, String> {
         }
 
         // --- Patient Info ---
-        // D10 (0-based: row 9, col 3): Full name
-        let full_name = cell_str(&range, 9, 3)
+        // Buscamos dinámicamente la fila base buscando "NOMBRE Y APELLIDO:" en la columna A
+        let mut base_row = 9; // Por defecto fila 10 (índice 9)
+        for r in 6..12 {
+            if let Some(val) = cell_str(&range, r, 0) {
+                if val.to_uppercase().contains("NOMBRE Y APELLIDO") {
+                    base_row = r;
+                    break;
+                }
+            }
+        }
+
+        // Nombre: Columna D
+        let full_name = cell_str(&range, base_row, 3)
             .or_else(|| Some(sheet_name.clone()))
             .unwrap_or_default();
 
         let (nombre, apellido) = split_name(&full_name);
 
-        // C11 (row 10, col 2): Cédula
-        let cedula = cell_str(&range, 10, 2);
+        // Cédula: Columna C de la siguiente fila
+        let cedula = cell_str(&range, base_row + 1, 2);
 
-        // E11 (row 10, col 4): Edad — stored but not mapped to DB field directly
-
-        // H11 (row 10, col 7): Fecha de nacimiento
-        let fecha_nacimiento = cell_str(&range, 10, 7).and_then(|val| {
-            // If already in YYYY-MM-DD format, keep it
+        // Fecha de nacimiento: Columna H de la siguiente fila
+        let fecha_nacimiento = cell_str(&range, base_row + 1, 7).and_then(|val| {
             if val.len() == 10 && val.chars().nth(4) == Some('-') {
                 Some(val)
             } else {
@@ -408,24 +370,26 @@ pub fn parse_excel(file_path: String) -> Result<Vec<ParsedPatient>, String> {
             }
         });
 
-        // F12 (row 11, col 5): Teléfono
-        let telefono = cell_str(&range, 11, 5);
+        // Teléfono: Columna F, +2 filas
+        let telefono = cell_str(&range, base_row + 2, 5);
 
-        // C12 (row 11, col 2): Profesión
-        let profesion = cell_str(&range, 11, 2);
+        // Profesión: Columna C, +2 filas
+        let profesion = cell_str(&range, base_row + 2, 2);
 
-        // C13 (row 12, col 2): Dirección
-        let direccion = cell_str(&range, 12, 2);
+        // Dirección: Columna C o D, +3 filas
+        let direccion = cell_str(&range, base_row + 3, 2)
+            .or_else(|| cell_str(&range, base_row + 3, 3));
 
-        // D14 (row 13, col 3): Email
-        let email = cell_str(&range, 13, 3);
+        // Email: Columna D, +4 filas
+        let email = cell_str(&range, base_row + 4, 3)
+            .or_else(|| cell_str(&range, base_row + 3, 3)); // A veces email está en C13 o D13
 
         // --- Clinical Data ---
-        let condiciones_medicas = build_condiciones_medicas(&range);
-        let notas_generales = build_notas_generales(&range);
+        let condiciones_medicas = build_condiciones_medicas(&range, base_row);
+        let notas_generales = build_notas_generales(&range, base_row);
 
         // --- Sessions ---
-        let sesiones = parse_sessions(&range);
+        let sesiones = parse_sessions(&range, base_row);
 
         patients.push(ParsedPatient {
             nombre,
