@@ -36,17 +36,23 @@ pub fn import_pacientes_from_excel(file_path: String) -> Result<ImportResult, St
     let mut errores: i64 = 0;
     let mut detalle_errores = String::new();
 
-    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    let mut conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    
+    // Iniciar transacción
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     for patient in patients {
-        // Check for duplicate by name
-        let patient_id = match find_patient_by_name(&conn, &patient.nombre, &patient.apellido) {
+        // Check for duplicate by name using the transaction connection
+        let patient_id = match tx.query_row(
+            "SELECT id FROM pacientes WHERE UPPER(nombre || ' ' || apellido) = UPPER(?1) AND activo = 1",
+            [&format!("{} {}", patient.nombre, patient.apellido)],
+            |row| row.get(0),
+        ).ok() {
             Some(existing_id) => {
                 duplicados += 1;
                 existing_id
             }
             None => {
-                // Build notas_generales: combine parsed notas with profesión and cédula info
                 let mut notas_parts = Vec::new();
                 if let Some(ref cedula) = patient.cedula {
                     notas_parts.push(format!("Cédula: {}", cedula));
@@ -57,11 +63,7 @@ pub fn import_pacientes_from_excel(file_path: String) -> Result<ImportResult, St
                 if let Some(ref notas) = patient.notas_generales {
                     notas_parts.push(notas.clone());
                 }
-                let notas_generales = if notas_parts.is_empty() {
-                    None
-                } else {
-                    Some(notas_parts.join("\n"))
-                };
+                let notas_generales = if notas_parts.is_empty() { None } else { Some(notas_parts.join("\n")) };
 
                 let nuevo = NuevoPaciente {
                     nombre: patient.nombre.clone(),
@@ -75,25 +77,20 @@ pub fn import_pacientes_from_excel(file_path: String) -> Result<ImportResult, St
                     condiciones_medicas: patient.condiciones_medicas.clone(),
                 };
 
-                match create_paciente(nuevo) {
+                match crate::db::repository::PacienteRepo::crear(&tx, &nuevo) {
                     Ok(id) => {
                         exitos += 1;
                         id
                     }
                     Err(e) => {
                         errores += 1;
-                        detalle_errores.push_str(&format!(
-                            "Error creando paciente '{}': {}\n",
-                            format!("{} {}", patient.nombre, patient.apellido),
-                            e
-                        ));
+                        detalle_errores.push_str(&format!("Error creando paciente '{}': {}\n", format!("{} {}", patient.nombre, patient.apellido), e));
                         continue;
                     }
                 }
             }
         };
 
-        // Create sessions for this patient
         for session in &patient.sesiones {
             let nueva_sesion = NuevaSesion {
                 paciente_id: patient_id,
@@ -106,22 +103,17 @@ pub fn import_pacientes_from_excel(file_path: String) -> Result<ImportResult, St
                 pagado: false,
             };
 
-            match create_sesion(nueva_sesion) {
-                Ok(_) => {
-                    sesiones_creadas += 1;
-                }
+            match crate::db::repository::SesionRepo::crear(&tx, &nueva_sesion) {
+                Ok(_) => { sesiones_creadas += 1; }
                 Err(e) => {
                     errores += 1;
-                    detalle_errores.push_str(&format!(
-                        "Error creando sesión para '{}' ({}): {}\n",
-                        format!("{} {}", patient.nombre, patient.apellido),
-                        session.fecha,
-                        e
-                    ));
+                    detalle_errores.push_str(&format!("Error creando sesión para '{}' ({}): {}\n", format!("{} {}", patient.nombre, patient.apellido), session.fecha, e));
                 }
             }
         }
     }
+    
+    tx.commit().map_err(|e| e.to_string())?;
 
     // Log the import
     let log_detalle = if detalle_errores.is_empty() {
