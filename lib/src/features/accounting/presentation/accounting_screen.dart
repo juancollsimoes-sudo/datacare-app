@@ -303,7 +303,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           lineBarsData: [
             LineChartBarData(
               spots: incomeSpots,
-              isCurved: true,
+              isCurved: false,
               color: Colors.green,
               barWidth: 4,
               isStrokeCapRound: true,
@@ -315,7 +315,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
             ),
             LineChartBarData(
               spots: expenseSpots,
-              isCurved: true,
+              isCurved: false,
               color: Colors.red,
               barWidth: 4,
               isStrokeCapRound: true,
