@@ -15,57 +15,50 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: ListView(
         children: [
-          ListTile(
-            title: Text(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: Text(
               'Apariencia',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Card(
-              elevation: 0,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                leading: const Icon(Icons.brightness_6),
-                title: const Text('Tema de la aplicación'),
-                trailing: DropdownButton<ThemeMode>(
+          ListTile(
+            leading: const Icon(Icons.brightness_6),
+            title: const Text('Tema de la aplicación'),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<ThemeMode>(
                   value: themeMode,
-                  underline: const SizedBox(),
                   onChanged: (ThemeMode? newMode) {
                     if (newMode != null) {
                       ref.read(themeModeProvider.notifier).setThemeMode(newMode);
                     }
                   },
                   items: const [
-                    DropdownMenuItem(
-                      value: ThemeMode.system,
-                      child: Text('Sistema'),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.light,
-                      child: Text('Claro'),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.dark,
-                      child: Text('Oscuro'),
-                    ),
+                    DropdownMenuItem(value: ThemeMode.system, child: Text('Sistema')),
+                    DropdownMenuItem(value: ThemeMode.light, child: Text('Claro')),
+                    DropdownMenuItem(value: ThemeMode.dark, child: Text('Oscuro')),
                   ],
                 ),
               ),
             ),
           ),
-          const Divider(),
-          ListTile(
-            title: Text(
+          const Divider(height: 32),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
               'Información de la Clínica',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
