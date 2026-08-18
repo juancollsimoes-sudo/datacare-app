@@ -102,24 +102,29 @@ class _AppShellState extends State<AppShell> {
             padding: EdgeInsets.zero,
             children: [
               DrawerHeader(
-                decoration: const BoxDecoration(color: Color(0xFF1A1B3A)),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Text(
                         'Sweet Care Spa',
                         style: TextStyle(
-                          color: Color(0xFFD4B896),
+                          color: Theme.of(context).colorScheme.primary,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'by Susana Simoes',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -130,8 +135,8 @@ class _AppShellState extends State<AppShell> {
                   leading: Icon(selectedIndex == i ? destinations[i].$2 : destinations[i].$1),
                   title: Text(destinations[i].$3),
                   selected: selectedIndex == i,
-                  selectedColor: const Color(0xFFC77D9C),
-                  selectedTileColor: const Color(0xFFC77D9C).withOpacity(0.08),
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
                   onTap: () {
                     Navigator.pop(context);
                     _onDestinationSelected(i, context);
@@ -158,27 +163,20 @@ class _AppShellState extends State<AppShell> {
       ),
       body: Row(
         children: [
-          Container(
-            color: const Color(0xFF1A1B3A),
-            child: NavigationRail(
-              extended: _isExtended,
-              backgroundColor: Colors.transparent,
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (index) => _onDestinationSelected(index, context),
-              selectedIconTheme: const IconThemeData(color: Color(0xFFC77D9C)),
-              unselectedIconTheme: const IconThemeData(color: Colors.white70),
-              indicatorColor: const Color(0xFF252745),
-              destinations: destinations.indexed.map((entry) {
-                final (i, d) = entry;
-                final isSelected = i == selectedIndex;
-                return NavigationRailDestination(
-                  icon: Icon(d.$1),
-                  selectedIcon: Icon(d.$2),
-                  label: Text(d.$3, style: TextStyle(color: isSelected ? const Color(0xFFC77D9C) : Colors.white70)),
-                );
-              }).toList(),
-            ),
+          NavigationRail(
+            extended: _isExtended,
+            selectedIndex: selectedIndex,
+            onDestinationSelected: (index) => _onDestinationSelected(index, context),
+            destinations: destinations.indexed.map((entry) {
+              final (i, d) = entry;
+              return NavigationRailDestination(
+                icon: Icon(d.$1),
+                selectedIcon: Icon(d.$2),
+                label: Text(d.$3),
+              );
+            }).toList(),
           ),
+          const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: widget.child,
           ),
