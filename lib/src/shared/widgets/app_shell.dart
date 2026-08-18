@@ -18,10 +18,11 @@ class _AppShellState extends State<AppShell> {
     if (location.startsWith('/patients')) return 1;
     if (location.startsWith('/sessions')) return 2;
     if (location.startsWith('/treatments')) return 3;
-    if (location.startsWith('/import')) return 4;
-    if (location.startsWith('/reports')) return 5;
-    if (location.startsWith('/backup')) return 6;
-    if (location.startsWith('/settings')) return 7;
+    if (location.startsWith('/accounting')) return 4;
+    if (location.startsWith('/import')) return 5;
+    if (location.startsWith('/reports')) return 6;
+    if (location.startsWith('/backup')) return 7;
+    if (location.startsWith('/settings')) return 8;
     return 0; // default to Home
   }
 
@@ -40,15 +41,18 @@ class _AppShellState extends State<AppShell> {
         context.go('/treatments');
         break;
       case 4:
-        context.go('/import');
+        context.go('/accounting');
         break;
       case 5:
-        context.go('/reports');
+        context.go('/import');
         break;
       case 6:
-        context.go('/backup');
+        context.go('/reports');
         break;
       case 7:
+        context.go('/backup');
+        break;
+      case 8:
         context.go('/settings');
         break;
     }
@@ -65,12 +69,14 @@ class _AppShellState extends State<AppShell> {
       case 3:
         return 'Tratamientos';
       case 4:
-        return 'Importar';
+        return 'Contaduría';
       case 5:
-        return 'Reportes';
+        return 'Importar';
       case 6:
-        return 'Backups';
+        return 'Reportes';
       case 7:
+        return 'Backups';
+      case 8:
         return 'Configuración';
       default:
         return 'DataCare';
@@ -88,6 +94,7 @@ class _AppShellState extends State<AppShell> {
       (Icons.people_outline, Icons.people, 'Pacientes'),
       (Icons.calendar_month_outlined, Icons.calendar_month, 'Sesiones'),
       (Icons.spa_outlined, Icons.spa, 'Tratamientos'),
+      (Icons.account_balance_outlined, Icons.account_balance, 'Contaduría'),
       (Icons.upload_file_outlined, Icons.upload, 'Importar'),
       (Icons.description_outlined, Icons.description, 'Reportes'),
       (Icons.backup_outlined, Icons.backup, 'Backups'),

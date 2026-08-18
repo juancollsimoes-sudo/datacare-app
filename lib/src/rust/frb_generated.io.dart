@@ -78,6 +78,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NuevaSesion dco_decode_box_autoadd_nueva_sesion(dynamic raw);
 
   @protected
+  NuevoGasto dco_decode_box_autoadd_nuevo_gasto(dynamic raw);
+
+  @protected
   NuevoPaciente dco_decode_box_autoadd_nuevo_paciente(dynamic raw);
 
   @protected
@@ -102,6 +105,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FotoSesion dco_decode_foto_sesion(dynamic raw);
 
   @protected
+  Gasto dco_decode_gasto(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
@@ -112,6 +118,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<FotoSesion> dco_decode_list_foto_sesion(dynamic raw);
+
+  @protected
+  List<Gasto> dco_decode_list_gasto(dynamic raw);
 
   @protected
   List<Paciente> dco_decode_list_paciente(dynamic raw);
@@ -127,6 +136,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   NuevaSesion dco_decode_nueva_sesion(dynamic raw);
+
+  @protected
+  NuevoGasto dco_decode_nuevo_gasto(dynamic raw);
 
   @protected
   NuevoPaciente dco_decode_nuevo_paciente(dynamic raw);
@@ -235,6 +247,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NuevaSesion sse_decode_box_autoadd_nueva_sesion(SseDeserializer deserializer);
 
   @protected
+  NuevoGasto sse_decode_box_autoadd_nuevo_gasto(SseDeserializer deserializer);
+
+  @protected
   NuevoPaciente sse_decode_box_autoadd_nuevo_paciente(
     SseDeserializer deserializer,
   );
@@ -263,6 +278,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FotoSesion sse_decode_foto_sesion(SseDeserializer deserializer);
 
   @protected
+  Gasto sse_decode_gasto(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
@@ -273,6 +291,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<FotoSesion> sse_decode_list_foto_sesion(SseDeserializer deserializer);
+
+  @protected
+  List<Gasto> sse_decode_list_gasto(SseDeserializer deserializer);
 
   @protected
   List<Paciente> sse_decode_list_paciente(SseDeserializer deserializer);
@@ -288,6 +309,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   NuevaSesion sse_decode_nueva_sesion(SseDeserializer deserializer);
+
+  @protected
+  NuevoGasto sse_decode_nuevo_gasto(SseDeserializer deserializer);
 
   @protected
   NuevoPaciente sse_decode_nuevo_paciente(SseDeserializer deserializer);
@@ -416,6 +440,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_nuevo_gasto(
+    NuevoGasto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_nuevo_paciente(
     NuevoPaciente self,
     SseSerializer serializer,
@@ -452,6 +482,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_foto_sesion(FotoSesion self, SseSerializer serializer);
 
   @protected
+  void sse_encode_gasto(Gasto self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
 
   @protected
@@ -465,6 +498,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     List<FotoSesion> self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_list_gasto(List<Gasto> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_paciente(List<Paciente> self, SseSerializer serializer);
@@ -486,6 +522,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_nueva_sesion(NuevaSesion self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_nuevo_gasto(NuevoGasto self, SseSerializer serializer);
 
   @protected
   void sse_encode_nuevo_paciente(NuevoPaciente self, SseSerializer serializer);

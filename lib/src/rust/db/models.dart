@@ -213,6 +213,45 @@ class FotoSesion {
           createdAt == other.createdAt;
 }
 
+class Gasto {
+  final PlatformInt64 id;
+  final String nombre;
+  final String? descripcion;
+  final String? categoria;
+  final double monto;
+  final String fecha;
+
+  const Gasto({
+    required this.id,
+    required this.nombre,
+    this.descripcion,
+    this.categoria,
+    required this.monto,
+    required this.fecha,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      nombre.hashCode ^
+      descripcion.hashCode ^
+      categoria.hashCode ^
+      monto.hashCode ^
+      fecha.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Gasto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          nombre == other.nombre &&
+          descripcion == other.descripcion &&
+          categoria == other.categoria &&
+          monto == other.monto &&
+          fecha == other.fecha;
+}
+
 class NuevaSesion {
   final PlatformInt64 pacienteId;
   final PlatformInt64? tratamientoId;
@@ -258,6 +297,41 @@ class NuevaSesion {
           productosUsados == other.productosUsados &&
           precioCobrado == other.precioCobrado &&
           pagado == other.pagado;
+}
+
+class NuevoGasto {
+  final String nombre;
+  final String? descripcion;
+  final String? categoria;
+  final double monto;
+  final String fecha;
+
+  const NuevoGasto({
+    required this.nombre,
+    this.descripcion,
+    this.categoria,
+    required this.monto,
+    required this.fecha,
+  });
+
+  @override
+  int get hashCode =>
+      nombre.hashCode ^
+      descripcion.hashCode ^
+      categoria.hashCode ^
+      monto.hashCode ^
+      fecha.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NuevoGasto &&
+          runtimeType == other.runtimeType &&
+          nombre == other.nombre &&
+          descripcion == other.descripcion &&
+          categoria == other.categoria &&
+          monto == other.monto &&
+          fecha == other.fecha;
 }
 
 class NuevoPaciente {

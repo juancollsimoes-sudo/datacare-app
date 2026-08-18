@@ -73,3 +73,12 @@ Future<void> updateSesion({required ActualizarSesion sesion}) =>
 
 Future<DashboardStats> getDashboardStats() =>
     RustLib.instance.api.crateApiDbApiGetDashboardStats();
+
+Future<PlatformInt64> createGasto({required NuevoGasto gasto}) =>
+    RustLib.instance.api.crateApiDbApiCreateGasto(gasto: gasto);
+
+Future<List<Gasto>> listGastos() =>
+    RustLib.instance.api.crateApiDbApiListGastos();
+
+Future<List<Sesion>> listIngresos() =>
+    RustLib.instance.api.crateApiDbApiListIngresos();

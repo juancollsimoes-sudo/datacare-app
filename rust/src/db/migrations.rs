@@ -99,6 +99,20 @@ pub fn apply_migrations(conn: &mut Connection) -> Result<(), AppError> {
             CREATE INDEX idx_fotos_sesion ON fotos_sesion(sesion_id);
             "#,
         ),
+        (
+            2,
+            "Add gastos table",
+            r#"
+            CREATE TABLE gastos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                descripcion TEXT,
+                categoria TEXT,
+                monto REAL NOT NULL,
+                fecha TEXT NOT NULL
+            );
+            "#,
+        ),
     ];
 
     let tx = conn.transaction()?;

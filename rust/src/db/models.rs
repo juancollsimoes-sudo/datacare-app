@@ -161,3 +161,22 @@ pub struct DashboardStats {
     pub sesiones_este_mes: i64,
     pub tratamientos_registrados: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Gasto {
+    pub id: i64,
+    pub nombre: String,
+    pub descripcion: Option<String>,
+    pub categoria: Option<String>,
+    pub monto: f64,
+    pub fecha: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NuevoGasto {
+    pub nombre: String,
+    pub descripcion: Option<String>,
+    pub categoria: Option<String>,
+    pub monto: f64,
+    pub fecha: String,
+}

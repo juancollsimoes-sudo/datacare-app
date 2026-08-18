@@ -11,6 +11,7 @@ import '../../features/import/presentation/import_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/backup/presentation/backup_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/accounting/presentation/accounting_screen.dart';
 import '../../features/patients/presentation/patient_detail_screen.dart';
 import '../../features/patients/presentation/patient_form_screen.dart';
 import '../../features/treatments/presentation/treatment_form_screen.dart';
@@ -101,6 +102,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/accounting',
+            builder: (context, state) => const AccountingScreen(),
           ),
         ],
       ),

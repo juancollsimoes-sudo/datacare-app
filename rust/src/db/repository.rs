@@ -276,6 +276,38 @@ impl SesionRepo {
         })
     }
 
+    pub fn list_ingresos(conn: &Connection) -> Result<Vec<Sesion>, AppError> {
+        let mut stmt = conn.prepare(
+            "SELECT id, paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
+                    productos_usados, precio_cobrado, pagado, created_at
+             FROM sesiones
+             WHERE precio_cobrado > 0 AND pagado = 1
+             ORDER BY fecha DESC"
+        )?;
+
+        let iter = stmt.query_map([], |row| {
+            let pagado_int: i32 = row.get(8)?;
+            Ok(Sesion {
+                id: row.get(0)?,
+                paciente_id: row.get(1)?,
+                tratamiento_id: row.get(2)?,
+                fecha: row.get(3)?,
+                notas_sesion: row.get(4)?,
+                observaciones: row.get(5)?,
+                productos_usados: row.get(6)?,
+                precio_cobrado: row.get(7)?,
+                pagado: pagado_int > 0,
+                created_at: row.get(9)?,
+            })
+        })?;
+
+        let mut items = Vec::new();
+        for item in iter {
+            items.push(item?);
+        }
+        Ok(items)
+    }
+
     pub fn obtener(conn: &Connection, id: i64) -> Result<Option<Sesion>, AppError> {
         let mut stmt = conn.prepare(
             "SELECT id, paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
@@ -448,3 +480,42 @@ impl StatsRepo {
         })
     }
 }
+
+// --- GASTOS ---
+pub struct GastoRepo;
+
+impl GastoRepo {
+    pub fn crear(conn: &Connection, g: &NuevoGasto) -> Result<i64, AppError> {
+        conn.execute(
+            "INSERT INTO gastos (nombre, descripcion, categoria, monto, fecha)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![g.nombre, g.descripcion, g.categoria, g.monto, g.fecha],
+        )?;
+        Ok(conn.last_insert_rowid())
+    }
+
+    pub fn listar(conn: &Connection) -> Result<Vec<Gasto>, AppError> {
+        let mut stmt = conn.prepare(
+            "SELECT id, nombre, descripcion, categoria, monto, fecha
+             FROM gastos ORDER BY fecha DESC"
+        )?;
+
+        let iter = stmt.query_map([], |row| {
+            Ok(Gasto {
+                id: row.get(0)?,
+                nombre: row.get(1)?,
+                descripcion: row.get(2)?,
+                categoria: row.get(3)?,
+                monto: row.get(4)?,
+                fecha: row.get(5)?,
+            })
+        })?;
+
+        let mut items = Vec::new();
+        for item in iter {
+            items.push(item?);
+        }
+        Ok(items)
+    }
+}
+

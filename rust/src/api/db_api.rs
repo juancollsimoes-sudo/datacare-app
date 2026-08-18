@@ -84,3 +84,19 @@ pub fn get_dashboard_stats() -> Result<crate::db::models::DashboardStats, String
     let conn = crate::db::DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
     crate::db::repository::StatsRepo::get_dashboard_stats(&conn).map_err(|e| e.to_string_err())
 }
+
+// --- ACCOUNTING API ---
+pub fn create_gasto(gasto: NuevoGasto) -> Result<i64, String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    crate::db::repository::GastoRepo::crear(&conn, &gasto).map_err(|e| e.to_string_err())
+}
+
+pub fn list_gastos() -> Result<Vec<Gasto>, String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    crate::db::repository::GastoRepo::listar(&conn).map_err(|e| e.to_string_err())
+}
+
+pub fn list_ingresos() -> Result<Vec<Sesion>, String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    SesionRepo::list_ingresos(&conn).map_err(|e| e.to_string_err())
+}
