@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,11 +40,77 @@ class SessionsScreen extends ConsumerStatefulWidget {
 class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  Sesion? _selectedSession;
+  Timer? _hoverTimer;
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+  }
+
+  @override
+  void dispose() {
+    _hoverTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onSessionHoverEntered(Sesion session) {
+    _hoverTimer?.cancel();
+    _hoverTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _selectedSession = session;
+        });
+      }
+    });
+  }
+
+  void _onSessionHoverExited() {
+    _hoverTimer?.cancel();
+  }
+
+  Widget _buildSessionDetails(Sesion session) {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Detalles de la Sesión #${session.id}', style: Theme.of(context).textTheme.titleLarge),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      _selectedSession = null;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('Fecha: ${session.fecha}', style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 8),
+            Text('Notas: ${session.notasSesion ?? 'Sin notas'}'),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.edit),
+                label: const Text('Editar Sesión'),
+                onPressed: () {
+                  context.go('/sessions/edit/${session.pacienteId}', extra: session);
+                },
+              ),
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -63,6 +130,19 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
 
           final selectedEvents = getEventsForDay(_selectedDay ?? _focusedDay);
 
+          DateTime now = DateTime.now();
+          DateTime today = DateTime(now.year, now.month, now.day);
+          DateTime limit = today.add(const Duration(days: 14));
+          List<Sesion> upcomingSessions = [];
+
+          sessionsMap.forEach((date, sessions) {
+            if ((date.isAtSameMomentAs(today) || date.isAfter(today)) && date.isBefore(limit.add(const Duration(days: 1)))) {
+              upcomingSessions.addAll(sessions);
+            }
+          });
+
+          upcomingSessions.sort((a, b) => DateTime.parse(a.fecha).compareTo(DateTime.parse(b.fecha)));
+
           return Column(
             children: [
               TableCalendar<Sesion>(
@@ -74,6 +154,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                   setState(() {
                     _selectedDay = selectedDay;
                     _focusedDay = focusedDay;
+                    _selectedSession = null; // Reset selection when changing day
                   });
                 },
                 eventLoader: getEventsForDay,
@@ -89,20 +170,63 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
               ),
               const SizedBox(height: 8.0),
               Expanded(
-                child: ListView.builder(
-                  itemCount: selectedEvents.length,
-                  itemBuilder: (context, index) {
-                    final event = selectedEvents[index];
-                    return ListTile(
-                      leading: const Icon(Icons.event_note),
-                      title: Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
-                      subtitle: Text(event.notasSesion ?? 'Sin notas'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        context.go('/sessions/edit/${event.pacienteId}', extra: event);
-                      },
-                    );
-                  },
+                child: _selectedSession != null
+                    ? _buildSessionDetails(_selectedSession!)
+                    : ListView.builder(
+                        itemCount: selectedEvents.length,
+                        itemBuilder: (context, index) {
+                          final event = selectedEvents[index];
+                          return MouseRegion(
+                            onEnter: (_) => _onSessionHoverEntered(event),
+                            onExit: (_) => _onSessionHoverExited(),
+                            child: ListTile(
+                              leading: const Icon(Icons.event_note),
+                              title: Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
+                              subtitle: Text(event.notasSesion ?? 'Sin notas'),
+                              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                              onTap: () {
+                                setState(() {
+                                  _selectedSession = event;
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const Divider(height: 1),
+              Container(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Próximas sesiones (2 semanas)', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 140,
+                      child: upcomingSessions.isEmpty
+                          ? const Center(child: Text('No hay sesiones próximas'))
+                          : ListView.builder(
+                              itemCount: upcomingSessions.length,
+                              itemBuilder: (context, index) {
+                                final event = upcomingSessions[index];
+                                return MouseRegion(
+                                  onEnter: (_) => _onSessionHoverEntered(event),
+                                  onExit: (_) => _onSessionHoverExited(),
+                                  child: ListTile(
+                                    leading: const Icon(Icons.upcoming),
+                                    title: Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedSession = event;
+                                      });
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
               ),
             ],
