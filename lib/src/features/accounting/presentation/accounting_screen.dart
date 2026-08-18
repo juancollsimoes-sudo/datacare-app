@@ -167,7 +167,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   Widget _buildVisualTab() {
     if (_transactions.isEmpty) return const Center(child: Text('No hay registros.'));
 
-    // Group by day for the chart
     final Map<int, double> incomesByDay = {};
     final Map<int, double> expensesByDay = {};
 
@@ -189,54 +188,107 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     }
 
     final int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-    final List<BarChartGroupData> barGroups = [];
+    final List<FlSpot> incomeSpots = [];
+    final List<FlSpot> expenseSpots = [];
+
+    double maxY = 0;
 
     for (int i = 1; i <= daysInMonth; i++) {
       final inc = incomesByDay[i] ?? 0.0;
       final exp = expensesByDay[i] ?? 0.0;
-      if (inc > 0 || exp > 0) {
-        barGroups.add(
-          BarChartGroupData(
-            x: i,
-            barRods: [
-              if (inc > 0)
-                BarChartRodData(toY: inc, color: Colors.green, width: 8),
-              if (exp > 0)
-                BarChartRodData(toY: exp, color: Colors.red, width: 8),
-            ],
-          ),
-        );
-      }
+      incomeSpots.add(FlSpot(i.toDouble(), inc));
+      expenseSpots.add(FlSpot(i.toDouble(), exp));
+      
+      if (inc > maxY) maxY = inc;
+      if (exp > maxY) maxY = exp;
     }
 
+    // Add some padding to maxY
+    maxY = maxY > 0 ? maxY * 1.2 : 100;
+
     return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          barGroups: barGroups,
+      padding: const EdgeInsets.only(right: 32.0, left: 16.0, top: 40.0, bottom: 16.0),
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(show: true, drawVerticalLine: true),
           titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
+                reservedSize: 30,
+                interval: 5,
                 getTitlesWidget: (value, meta) {
-                  return Text(value.toInt().toString(), style: const TextStyle(fontSize: 10));
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      'Día ${value.toInt()}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  );
                 },
               ),
             ),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 60,
+                getTitlesWidget: (value, meta) {
+                  return Text('\$${value.toInt()}', style: const TextStyle(fontSize: 12));
+                },
+              ),
+            ),
           ),
-          borderData: FlBorderData(show: false),
-          barTouchData: BarTouchData(
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (group) => Colors.blueGrey,
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                return BarTooltipItem(
-                  'Día ${group.x}\n\$${rod.toY.toStringAsFixed(2)}',
-                  const TextStyle(color: Colors.white),
-                );
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: const Color(0xff37434d), width: 1),
+          ),
+          minX: 1,
+          maxX: daysInMonth.toDouble(),
+          minY: 0,
+          maxY: maxY,
+          lineBarsData: [
+            LineChartBarData(
+              spots: incomeSpots,
+              isCurved: true,
+              color: Colors.green,
+              barWidth: 4,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: true),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.green.withOpacity(0.1),
+              ),
+            ),
+            LineChartBarData(
+              spots: expenseSpots,
+              isCurved: true,
+              color: Colors.red,
+              barWidth: 4,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: true),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.red.withOpacity(0.1),
+              ),
+            ),
+          ],
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (touchedSpot) => Colors.blueGrey.shade800,
+              getTooltipItems: (touchedSpots) {
+                return touchedSpots.map((LineBarSpot touchedSpot) {
+                  final isIncome = touchedSpot.barIndex == 0;
+                  return LineTooltipItem(
+                    '${isIncome ? 'Ingreso' : 'Gasto'}: \$${touchedSpot.y.toStringAsFixed(2)}',
+                    TextStyle(
+                      color: isIncome ? Colors.greenAccent : Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }).toList();
               },
             ),
           ),
