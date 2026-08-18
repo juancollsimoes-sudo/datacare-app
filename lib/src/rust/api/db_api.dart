@@ -41,10 +41,16 @@ Future<PlatformInt64> createTratamiento({
 Future<List<Tratamiento>> listTratamientos() =>
     RustLib.instance.api.crateApiDbApiListTratamientos();
 
+Future<Tratamiento?> getTratamiento({required PlatformInt64 id}) =>
+    RustLib.instance.api.crateApiDbApiGetTratamiento(id: id);
+
 Future<void> updateTratamiento({required ActualizarTratamiento tratamiento}) =>
     RustLib.instance.api.crateApiDbApiUpdateTratamiento(
       tratamiento: tratamiento,
     );
+
+Future<void> deleteTratamiento({required PlatformInt64 id}) =>
+    RustLib.instance.api.crateApiDbApiDeleteTratamiento(id: id);
 
 Future<PlatformInt64> createSesion({required NuevaSesion sesion}) =>
     RustLib.instance.api.crateApiDbApiCreateSesion(sesion: sesion);

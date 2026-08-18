@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -243547930;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -959815669;
 
 // Section: executor
 
@@ -283,6 +283,39 @@ fn wire__crate__api__photos_api__delete_photo_impl(
         },
     )
 }
+fn wire__crate__api__db_api__delete_tratamiento_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "delete_tratamiento",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_id = <i64>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::db_api::delete_tratamiento(api_id)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__db_api__get_dashboard_stats_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -375,6 +408,39 @@ fn wire__crate__api__db_api__get_sesion_impl(
             move |context| {
                 transform_result_sse::<_, String>((move || {
                     let output_ok = crate::api::db_api::get_sesion(api_id)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__db_api__get_tratamiento_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_tratamiento",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_id = <i64>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::db_api::get_tratamiento(api_id)?;
                     Ok(output_ok)
                 })())
             }
@@ -1074,11 +1140,15 @@ impl SseDecode for crate::api::import_api::ImportResult {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_total = <i64>::sse_decode(deserializer);
         let mut var_exitos = <i64>::sse_decode(deserializer);
+        let mut var_sesionesCreadas = <i64>::sse_decode(deserializer);
+        let mut var_duplicados = <i64>::sse_decode(deserializer);
         let mut var_errores = <i64>::sse_decode(deserializer);
         let mut var_detalle = <String>::sse_decode(deserializer);
         return crate::api::import_api::ImportResult {
             total: var_total,
             exitos: var_exitos,
+            sesiones_creadas: var_sesionesCreadas,
+            duplicados: var_duplicados,
             errores: var_errores,
             detalle: var_detalle,
         };
@@ -1266,6 +1336,17 @@ impl SseDecode for Option<crate::db::models::Sesion> {
     }
 }
 
+impl SseDecode for Option<crate::db::models::Tratamiento> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::db::models::Tratamiento>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for crate::db::models::Paciente {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1425,47 +1506,49 @@ fn pde_ffi_dispatcher_primary_impl(
         5 => wire__crate__api__db_api__create_tratamiento_impl(port, ptr, rust_vec_len, data_len),
         6 => wire__crate__api__db_api__deactivate_paciente_impl(port, ptr, rust_vec_len, data_len),
         7 => wire__crate__api__photos_api__delete_photo_impl(port, ptr, rust_vec_len, data_len),
-        8 => wire__crate__api__db_api__get_dashboard_stats_impl(port, ptr, rust_vec_len, data_len),
-        9 => wire__crate__api__db_api__get_paciente_impl(port, ptr, rust_vec_len, data_len),
-        10 => wire__crate__api__db_api__get_sesion_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__import_api__import_pacientes_from_excel_impl(
+        8 => wire__crate__api__db_api__delete_tratamiento_impl(port, ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__db_api__get_dashboard_stats_impl(port, ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__db_api__get_paciente_impl(port, ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__db_api__get_sesion_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__db_api__get_tratamiento_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__import_api__import_pacientes_from_excel_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        13 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__db_api__init_database_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__db_api__list_pacientes_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__photos_api__list_photos_by_patient_impl(
+        15 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__db_api__init_database_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__db_api__list_pacientes_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__photos_api__list_photos_by_patient_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => wire__crate__api__photos_api__list_photos_by_session_impl(
+        19 => wire__crate__api__photos_api__list_photos_by_session_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        18 => wire__crate__api__db_api__list_sesiones_by_paciente_impl(
+        20 => wire__crate__api__db_api__list_sesiones_by_paciente_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        19 => wire__crate__api__db_api__list_tratamientos_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__backup_api__restore_backup_impl(port, ptr, rust_vec_len, data_len),
-        21 => {
+        21 => wire__crate__api__db_api__list_tratamientos_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__backup_api__restore_backup_impl(port, ptr, rust_vec_len, data_len),
+        23 => {
             wire__crate__api__photos_api__save_session_photo_impl(port, ptr, rust_vec_len, data_len)
         }
-        22 => {
+        24 => {
             wire__crate__api__server_api__start_local_server_impl(port, ptr, rust_vec_len, data_len)
         }
-        23 => wire__crate__api__db_api__update_paciente_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__db_api__update_sesion_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__db_api__update_tratamiento_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__db_api__update_paciente_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__db_api__update_sesion_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__db_api__update_tratamiento_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1478,7 +1561,7 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        11 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1631,6 +1714,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::import_api::ImportResult {
         [
             self.total.into_into_dart().into_dart(),
             self.exitos.into_into_dart().into_dart(),
+            self.sesiones_creadas.into_into_dart().into_dart(),
+            self.duplicados.into_into_dart().into_dart(),
             self.errores.into_into_dart().into_dart(),
             self.detalle.into_into_dart().into_dart(),
         ]
@@ -1971,6 +2056,8 @@ impl SseEncode for crate::api::import_api::ImportResult {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i64>::sse_encode(self.total, serializer);
         <i64>::sse_encode(self.exitos, serializer);
+        <i64>::sse_encode(self.sesiones_creadas, serializer);
+        <i64>::sse_encode(self.duplicados, serializer);
         <i64>::sse_encode(self.errores, serializer);
         <String>::sse_encode(self.detalle, serializer);
     }
@@ -2111,6 +2198,16 @@ impl SseEncode for Option<crate::db::models::Sesion> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::db::models::Sesion>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::db::models::Tratamiento> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::db::models::Tratamiento>::sse_encode(value, serializer);
         }
     }
 }

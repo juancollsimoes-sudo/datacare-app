@@ -51,9 +51,11 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Total de filas procesadas: ${importResult.total}'),
-                Text('Éxitos: ${importResult.exitos}', style: const TextStyle(color: Colors.green)),
-                Text('Errores: ${importResult.errores}', style: const TextStyle(color: Colors.red)),
+                _resultRow(Icons.people, 'Pacientes procesados', '${importResult.total}', null),
+                _resultRow(Icons.check_circle, 'Pacientes importados', '${importResult.exitos}', Colors.green),
+                _resultRow(Icons.event_note, 'Sesiones importadas', '${importResult.sesionesCreadas}', Colors.blue),
+                _resultRow(Icons.people_outline, 'Duplicados (omitidos)', '${importResult.duplicados}', Colors.orange),
+                _resultRow(Icons.error_outline, 'Errores', '${importResult.errores}', Colors.red),
                 if (importResult.detalle.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   const Text('Detalle de errores:'),
@@ -96,6 +98,20 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
     }
   }
 
+  Widget _resultRow(IconData icon, String label, String value, Color? color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color ?? Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,15 +127,12 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.file_upload, size: 64, color: Colors.blue),
+                  Icon(Icons.file_upload_outlined, size: 64, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Importar desde Excel',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
+                  Text('Importar desde Excel', style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 16),
                   const Text(
-                    'Selecciona un archivo .xlsx para importar pacientes.\nEl archivo debe tener las columnas:\nNombre, Apellido, Teléfono, Email, Notas.',
+                    'Selecciona los archivos Excel (.xlsx) de historias clínicas\npara importar pacientes y sus sesiones a DataCare.\n\nCada hoja del Excel se importará como un paciente.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),

@@ -6,6 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `find_patient_by_name`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
 Future<ImportResult> importPacientesFromExcel({required String filePath}) =>
@@ -16,19 +17,28 @@ Future<ImportResult> importPacientesFromExcel({required String filePath}) =>
 class ImportResult {
   final PlatformInt64 total;
   final PlatformInt64 exitos;
+  final PlatformInt64 sesionesCreadas;
+  final PlatformInt64 duplicados;
   final PlatformInt64 errores;
   final String detalle;
 
   const ImportResult({
     required this.total,
     required this.exitos,
+    required this.sesionesCreadas,
+    required this.duplicados,
     required this.errores,
     required this.detalle,
   });
 
   @override
   int get hashCode =>
-      total.hashCode ^ exitos.hashCode ^ errores.hashCode ^ detalle.hashCode;
+      total.hashCode ^
+      exitos.hashCode ^
+      sesionesCreadas.hashCode ^
+      duplicados.hashCode ^
+      errores.hashCode ^
+      detalle.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -37,6 +47,8 @@ class ImportResult {
           runtimeType == other.runtimeType &&
           total == other.total &&
           exitos == other.exitos &&
+          sesionesCreadas == other.sesionesCreadas &&
+          duplicados == other.duplicados &&
           errores == other.errores &&
           detalle == other.detalle;
 }

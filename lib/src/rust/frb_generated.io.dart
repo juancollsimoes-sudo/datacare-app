@@ -90,6 +90,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Sesion dco_decode_box_autoadd_sesion(dynamic raw);
 
   @protected
+  Tratamiento dco_decode_box_autoadd_tratamiento(dynamic raw);
+
+  @protected
   DashboardStats dco_decode_dashboard_stats(dynamic raw);
 
   @protected
@@ -145,6 +148,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Sesion? dco_decode_opt_box_autoadd_sesion(dynamic raw);
+
+  @protected
+  Tratamiento? dco_decode_opt_box_autoadd_tratamiento(dynamic raw);
 
   @protected
   Paciente dco_decode_paciente(dynamic raw);
@@ -245,6 +251,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Sesion sse_decode_box_autoadd_sesion(SseDeserializer deserializer);
 
   @protected
+  Tratamiento sse_decode_box_autoadd_tratamiento(SseDeserializer deserializer);
+
+  @protected
   DashboardStats sse_decode_dashboard_stats(SseDeserializer deserializer);
 
   @protected
@@ -300,6 +309,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Sesion? sse_decode_opt_box_autoadd_sesion(SseDeserializer deserializer);
+
+  @protected
+  Tratamiento? sse_decode_opt_box_autoadd_tratamiento(
+    SseDeserializer deserializer,
+  );
 
   @protected
   Paciente sse_decode_paciente(SseDeserializer deserializer);
@@ -420,6 +434,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_sesion(Sesion self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_tratamiento(
+    Tratamiento self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_dashboard_stats(
     DashboardStats self,
     SseSerializer serializer,
@@ -497,6 +517,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_sesion(
     Sesion? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_tratamiento(
+    Tratamiento? self,
     SseSerializer serializer,
   );
 
