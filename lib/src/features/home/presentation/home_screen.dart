@@ -24,91 +24,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final theme = Theme.of(context);
     final statsAsync = ref.watch(dashboardStatsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.refresh(dashboardStatsProvider),
-            tooltip: 'Actualizar',
-          ),
-        ],
-      ),
-      body: statsAsync.when(
-        data: (stats) {
-          return RefreshIndicator(
-            onRefresh: () async => ref.refresh(dashboardStatsProvider.future),
-            child: ListView(
-              padding: const EdgeInsets.all(24.0),
-              children: [
-                Text(
-                  'Resumen',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Wrap(
-                  spacing: 16.0,
-                  runSpacing: 16.0,
-                  alignment: WrapAlignment.start,
-                  children: [
-                    _buildStatCard(
-                      context,
-                      title: 'Pacientes Activos',
-                      value: stats.totalPacientesActivos.toString(),
-                      icon: Icons.people,
-                      color: Colors.blue,
-                    ),
-                    _buildStatCard(
-                      context,
-                      title: 'Sesiones este Mes',
-                      value: stats.sesionesEsteMes.toString(),
-                      icon: Icons.calendar_today,
-                      color: Colors.green,
-                    ),
-                    _buildStatCard(
-                      context,
-                      title: 'Tratamientos',
-                      value: stats.tratamientosRegistrados.toString(),
-                      icon: Icons.medical_services,
-                      color: Colors.orange,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                // Aquí podrías agregar más secciones del dashboard en el futuro
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return statsAsync.when(
+      data: (stats) {
+        return RefreshIndicator(
+          onRefresh: () async => ref.refresh(dashboardStatsProvider.future),
+          child: ListView(
+            padding: const EdgeInsets.all(24.0),
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
               Text(
-                'Error al cargar los datos',
-                style: theme.textTheme.titleMedium,
+                'Resumen',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: theme.textTheme.bodySmall,
-                textAlign: TextAlign.center,
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 16.0,
+                runSpacing: 16.0,
+                alignment: WrapAlignment.start,
+                children: [
+                  _buildStatCard(
+                    context,
+                    title: 'Pacientes Activos',
+                    value: stats.totalPacientesActivos.toString(),
+                    icon: Icons.people,
+                    index: 0,
+                  ),
+                  _buildStatCard(
+                    context,
+                    title: 'Sesiones este Mes',
+                    value: stats.sesionesEsteMes.toString(),
+                    icon: Icons.calendar_today,
+                    index: 1,
+                  ),
+                  _buildStatCard(
+                    context,
+                    title: 'Tratamientos',
+                    value: stats.tratamientosRegistrados.toString(),
+                    icon: Icons.medical_services,
+                    index: 2,
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => ref.refresh(dashboardStatsProvider),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
-              ),
+              const SizedBox(height: 32),
+              // Aquí podrías agregar más secciones del dashboard en el futuro
             ],
           ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              'Error al cargar los datos',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => ref.refresh(dashboardStatsProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
+            ),
+          ],
         ),
       ),
     );
@@ -119,16 +106,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String title,
     required String value,
     required IconData icon,
-    required Color color,
+    required int index,
   }) {
     final theme = Theme.of(context);
-    
+
+    // Determine colors based on card index
+    final Color containerColor;
+    final Color iconColor;
+    switch (index) {
+      case 0: // Pacientes
+        containerColor = theme.colorScheme.primaryContainer;
+        iconColor = theme.colorScheme.primary;
+        break;
+      case 1: // Sesiones
+        containerColor = theme.colorScheme.tertiaryContainer;
+        iconColor = theme.colorScheme.tertiary;
+        break;
+      case 2: // Tratamientos
+        containerColor = theme.colorScheme.secondaryContainer;
+        iconColor = theme.colorScheme.secondary;
+        break;
+      default:
+        containerColor = theme.colorScheme.primaryContainer;
+        iconColor = theme.colorScheme.primary;
+    }
+
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 250, maxWidth: 300),
+      constraints: const BoxConstraints(minWidth: 200, maxWidth: 320),
       child: Card(
-        elevation: 2,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -138,10 +149,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: containerColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 32),
+                child: Icon(icon, color: iconColor, size: 32),
               ),
               const SizedBox(width: 16),
               Expanded(

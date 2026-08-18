@@ -96,17 +96,33 @@ class _AppShellState extends State<AppShell> {
 
     if (!isDesktop) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(title),
-        ),
+        appBar: AppBar(title: Text(title)),
         drawer: Drawer(
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-              const DrawerHeader(
-                decoration: BoxDecoration(color: Colors.blueGrey),
+              DrawerHeader(
+                decoration: const BoxDecoration(color: Color(0xFF1A1B3A)),
                 child: Center(
-                  child: Text('DataCare', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        'Sweet Care Spa',
+                        style: TextStyle(
+                          color: Color(0xFFD4B896),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'by Susana Simoes',
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               for (int i = 0; i < destinations.length; i++)
@@ -114,6 +130,8 @@ class _AppShellState extends State<AppShell> {
                   leading: Icon(selectedIndex == i ? destinations[i].$2 : destinations[i].$1),
                   title: Text(destinations[i].$3),
                   selected: selectedIndex == i,
+                  selectedColor: const Color(0xFFC77D9C),
+                  selectedTileColor: const Color(0xFFC77D9C).withOpacity(0.08),
                   onTap: () {
                     Navigator.pop(context);
                     _onDestinationSelected(i, context);
@@ -140,17 +158,27 @@ class _AppShellState extends State<AppShell> {
       ),
       body: Row(
         children: [
-          NavigationRail(
-            extended: _isExtended,
-            selectedIndex: selectedIndex,
-            onDestinationSelected: (index) => _onDestinationSelected(index, context),
-            destinations: destinations.map((d) => NavigationRailDestination(
-              icon: Icon(d.$1),
-              selectedIcon: Icon(d.$2),
-              label: Text(d.$3),
-            )).toList(),
+          Container(
+            color: const Color(0xFF1A1B3A),
+            child: NavigationRail(
+              extended: _isExtended,
+              backgroundColor: Colors.transparent,
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (index) => _onDestinationSelected(index, context),
+              selectedIconTheme: const IconThemeData(color: Color(0xFFC77D9C)),
+              unselectedIconTheme: const IconThemeData(color: Colors.white70),
+              indicatorColor: const Color(0xFF252745),
+              destinations: destinations.indexed.map((entry) {
+                final (i, d) = entry;
+                final isSelected = i == selectedIndex;
+                return NavigationRailDestination(
+                  icon: Icon(d.$1),
+                  selectedIcon: Icon(d.$2),
+                  label: Text(d.$3, style: TextStyle(color: isSelected ? const Color(0xFFC77D9C) : Colors.white70)),
+                );
+              }).toList(),
+            ),
           ),
-          const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: widget.child,
           ),
