@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import '../../../rust/api/import_api.dart';
+import '../../patients/providers/patients_providers.dart';
 
 class ImportScreen extends ConsumerStatefulWidget {
   const ImportScreen({super.key});
@@ -41,6 +42,10 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
       });
 
       final importResult = await importPacientesFromExcel(filePath: _selectedFile!);
+
+      // Refresh providers so the new patients show up in the list and dashboard
+      ref.read(patientsProvider.notifier).refresh();
+      // Also invalidate stats if you have a dashboard provider (optional, we can just invalidate the patients)
 
       if (mounted) {
         showDialog(

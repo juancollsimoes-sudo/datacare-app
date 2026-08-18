@@ -23,7 +23,7 @@ class PatientsListState {
 class PatientsNotifier extends AsyncNotifier<PatientsListState> {
   @override
   Future<PatientsListState> build() async {
-    return _fetchPatients('', 1, 10);
+    return _fetchPatients('', 1, 50);
   }
 
   Future<PatientsListState> _fetchPatients(String search, int page, int pageSize) async {
@@ -73,7 +73,7 @@ class PatientsNotifier extends AsyncNotifier<PatientsListState> {
     if (currentState == null) {
       state = const AsyncValue.loading();
       try {
-        final newState = await _fetchPatients('', 1, 10);
+        final newState = await _fetchPatients('', 1, 50);
         state = AsyncValue.data(newState);
       } catch (e, st) {
         state = AsyncValue.error(e, st);
