@@ -420,7 +420,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
       _nombreController.text = g.nombre;
       _descripcionController.text = g.descripcion ?? '';
       _montoController.text = g.monto.toString();
-      _selectedCategory = g.categoria;
+      _selectedCategory = g.categoria ?? 'Otro';
       _selectedDate = DateTime.tryParse(g.fecha) ?? DateTime.now();
     }
   }
