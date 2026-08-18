@@ -53,3 +53,7 @@ rust/Cargo.lock
 /build/installer/
 /build/DataCare-Windows-Portable-*.zip
 /build/checksums-sha256.txt
+
+# AI Documentation
+AI_GUIDE.md
+design_recommendations.md
