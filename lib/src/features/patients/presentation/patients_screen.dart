@@ -16,6 +16,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   final Set<PlatformInt64> _selectedPatients = {};
+  bool _selectionMode = false;
 
   @override
   void dispose() {
@@ -67,18 +68,6 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     ],
                   ),
                 ),
-                if (_selectedPatients.isNotEmpty) ...[
-                  const SizedBox(width: 16),
-                  FilledButton.icon(
-                    onPressed: () => _confirmBulkDeactivate(context),
-                    icon: const Icon(Icons.group_off),
-                    label: Text('Desactivar ${_selectedPatients.length}'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Theme.of(context).colorScheme.onError,
-                    ),
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 24),
@@ -108,7 +97,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          showCheckboxColumn: true,
+                          showCheckboxColumn: _selectionMode,
                           columns: const [
                             DataColumn(label: Text('Nombre')),
                             DataColumn(label: Text('Teléfono')),
@@ -119,8 +108,12 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                           ],
                           rows: data.items.map((paciente) {
                             return DataRow(
-                              selected: _selectedPatients.contains(paciente.id),
+                              selected: _selectionMode && _selectedPatients.contains(paciente.id),
                               onSelectChanged: (selected) {
+                                if (!_selectionMode) {
+                                  context.go('/patients/${paciente.id}');
+                                  return;
+                                }
                                 if (selected != null) {
                                   setState(() {
                                     if (selected) {
@@ -188,7 +181,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
             ),
             // Pagination
             patientsState.maybeWhen(
-              data: (data) => _buildPagination(data),
+              data: (data) => _buildBottomBar(context, data),
               orElse: () => const SizedBox.shrink(),
             ),
           ],
@@ -197,30 +190,65 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     );
   }
 
-  Widget _buildPagination(PatientsListState data) {
+  Widget _buildBottomBar(BuildContext context, PatientsListState data) {
     final totalPages = (data.total / data.pageSize).ceil();
-    if (totalPages <= 1) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Text('Total: ${data.total}'),
-          const SizedBox(width: 16),
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: data.page > 1
-                ? () => ref.read(patientsProvider.notifier).loadPage(data.page - 1)
-                : null,
-          ),
-          Text('Página ${data.page} de $totalPages'),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: data.page < totalPages
-                ? () => ref.read(patientsProvider.notifier).loadPage(data.page + 1)
-                : null,
-          ),
+          if (!_selectionMode)
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectionMode = true;
+                });
+              },
+              icon: const Icon(Icons.checklist),
+              label: const Text('Seleccionar Varios'),
+            )
+          else ...[
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectionMode = false;
+                  _selectedPatients.clear();
+                });
+              },
+              icon: const Icon(Icons.cancel),
+              label: const Text('Cancelar'),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              onPressed: _selectedPatients.isNotEmpty
+                  ? () => _confirmBulkDeactivate(context)
+                  : null,
+              icon: const Icon(Icons.group_off),
+              label: Text('Desactivar ${_selectedPatients.length}'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+            ),
+          ],
+          const Spacer(),
+          if (totalPages > 1) ...[
+            Text('Total: ${data.total}'),
+            const SizedBox(width: 16),
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              onPressed: data.page > 1
+                  ? () => ref.read(patientsProvider.notifier).loadPage(data.page - 1)
+                  : null,
+            ),
+            Text('Página ${data.page} de $totalPages'),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              onPressed: data.page < totalPages
+                  ? () => ref.read(patientsProvider.notifier).loadPage(data.page + 1)
+                  : null,
+            ),
+          ],
         ],
       ),
     );
@@ -276,6 +304,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
       await ref.read(patientsActionProvider).bulkDeactivate(_selectedPatients.toList());
       setState(() {
         _selectedPatients.clear();
+        _selectionMode = false;
       });
     }
   }

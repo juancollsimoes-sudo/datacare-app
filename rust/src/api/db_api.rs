@@ -91,6 +91,16 @@ pub fn create_gasto(gasto: NuevoGasto) -> Result<i64, String> {
     crate::db::repository::GastoRepo::crear(&conn, &gasto).map_err(|e| e.to_string_err())
 }
 
+pub fn update_gasto(gasto: Gasto) -> Result<(), String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    crate::db::repository::GastoRepo::actualizar(&conn, &gasto).map_err(|e| e.to_string_err())
+}
+
+pub fn delete_gasto(id: i64) -> Result<(), String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    crate::db::repository::GastoRepo::eliminar(&conn, id).map_err(|e| e.to_string_err())
+}
+
 pub fn list_gastos() -> Result<Vec<Gasto>, String> {
     let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
     crate::db::repository::GastoRepo::listar(&conn).map_err(|e| e.to_string_err())

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../rust/api/db_api.dart';
 import '../../../rust/db/models.dart';
@@ -53,10 +54,10 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     }
   }
 
-  void _showAddExpenseDialog() {
+  void _showAddExpenseDialog([Gasto? gasto]) {
     showDialog(
       context: context,
-      builder: (context) => const AddExpenseDialog(),
+      builder: (context) => AddExpenseDialog(gastoToEdit: gasto),
     ).then((result) {
       if (result == true) {
         _loadData();
@@ -120,6 +121,56 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
               } catch (_) {}
 
               return ListTile(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.edit),
+                            title: const Text('Modificar'),
+                            onTap: () {
+                              Navigator.pop(context);
+                              if (isExpense) {
+                                _showAddExpenseDialog(item as Gasto);
+                              } else {
+                                final sesion = item as Sesion;
+                                context.go('/sessions/edit/${sesion.pacienteId}', extra: sesion);
+                              }
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.delete, color: Colors.red),
+                            title: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                            onTap: () async {
+                              Navigator.pop(context);
+                              if (isExpense) {
+                                try {
+                                  await deleteGasto(id: (item as Gasto).id);
+                                  _loadData();
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error al eliminar gasto: $e')),
+                                    );
+                                  }
+                                }
+                              } else {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Las sesiones deben eliminarse o anularse desde la pestaña de Sesiones')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
                 leading: CircleAvatar(
                   backgroundColor: isExpense ? Colors.red.shade100 : Colors.green.shade100,
                   child: Icon(
@@ -336,7 +387,8 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
 }
 
 class AddExpenseDialog extends StatefulWidget {
-  const AddExpenseDialog({super.key});
+  final Gasto? gastoToEdit;
+  const AddExpenseDialog({super.key, this.gastoToEdit});
 
   @override
   State<AddExpenseDialog> createState() => _AddExpenseDialogState();
@@ -360,6 +412,19 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.gastoToEdit != null) {
+      final g = widget.gastoToEdit!;
+      _nombreController.text = g.nombre;
+      _descripcionController.text = g.descripcion ?? '';
+      _montoController.text = g.monto.toString();
+      _selectedCategory = g.categoria;
+      _selectedDate = DateTime.tryParse(g.fecha) ?? DateTime.now();
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -381,15 +446,27 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
     
     try {
       final monto = double.parse(_montoController.text);
-      final gasto = NuevoGasto(
-        nombre: _nombreController.text,
-        descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
-        categoria: _selectedCategory,
-        monto: monto,
-        fecha: _selectedDate.toIso8601String(),
-      );
+      if (widget.gastoToEdit == null) {
+        final gasto = NuevoGasto(
+          nombre: _nombreController.text,
+          descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
+          categoria: _selectedCategory,
+          monto: monto,
+          fecha: _selectedDate.toIso8601String(),
+        );
+        await createGasto(gasto: gasto);
+      } else {
+        final gasto = Gasto(
+          id: widget.gastoToEdit!.id,
+          nombre: _nombreController.text,
+          descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
+          categoria: _selectedCategory,
+          monto: monto,
+          fecha: _selectedDate.toIso8601String(),
+        );
+        await updateGasto(gasto: gasto);
+      }
       
-      await createGasto(gasto: gasto);
       if (mounted) {
         Navigator.of(context).pop(true);
       }
@@ -414,7 +491,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nuevo Gasto'),
+      title: Text(widget.gastoToEdit == null ? 'Nuevo Gasto' : 'Modificar Gasto'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

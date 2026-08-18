@@ -517,5 +517,18 @@ impl GastoRepo {
         }
         Ok(items)
     }
+
+    pub fn eliminar(conn: &Connection, id: i64) -> Result<(), AppError> {
+        conn.execute("DELETE FROM gastos WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    pub fn actualizar(conn: &Connection, g: &Gasto) -> Result<(), AppError> {
+        conn.execute(
+            "UPDATE gastos SET nombre = ?1, descripcion = ?2, categoria = ?3, monto = ?4, fecha = ?5 WHERE id = ?6",
+            params![g.nombre, g.descripcion, g.categoria, g.monto, g.fecha, g.id],
+        )?;
+        Ok(())
+    }
 }
 

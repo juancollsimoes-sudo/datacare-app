@@ -77,6 +77,12 @@ Future<DashboardStats> getDashboardStats() =>
 Future<PlatformInt64> createGasto({required NuevoGasto gasto}) =>
     RustLib.instance.api.crateApiDbApiCreateGasto(gasto: gasto);
 
+Future<void> updateGasto({required Gasto gasto}) =>
+    RustLib.instance.api.crateApiDbApiUpdateGasto(gasto: gasto);
+
+Future<void> deleteGasto({required PlatformInt64 id}) =>
+    RustLib.instance.api.crateApiDbApiDeleteGasto(id: id);
+
 Future<List<Gasto>> listGastos() =>
     RustLib.instance.api.crateApiDbApiListGastos();
 
