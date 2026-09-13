@@ -10,7 +10,7 @@ PlatformInt64 _toPlatformInt64(dynamic value) {
   if (kIsWeb) {
     return BigInt.parse(value.toString()) as PlatformInt64;
   } else {
-    return int.parse(value.toString()) as PlatformInt64;
+    return (int.parse(value.toString()) as dynamic) as PlatformInt64;
   }
 }
 
@@ -84,6 +84,15 @@ class WebApiClient implements ApiClient {
         'notas_generales': paciente.notasGenerales,
         'alergias': paciente.alergias,
         'condiciones_medicas': paciente.condicionesMedicas,
+        'afecciones_cutaneas': paciente.afeccionesCutaneas,
+        'tatuajes': paciente.tatuajes,
+        'cirugia_plastica': paciente.cirugiaPlastica,
+        'antecedentes_medicos': paciente.antecedentesMedicos,
+        'ubicacion_lesiones': paciente.ubicacionLesiones,
+        'tipo_piel': paciente.tipoPiel,
+        'cicatrizacion': paciente.cicatrizacion,
+        'diagnostico_visual': paciente.diagnosticoVisual,
+        'diagnostico_tactil': paciente.diagnosticoTactil,
       }),
     );
 
@@ -112,6 +121,15 @@ class WebApiClient implements ApiClient {
         'notas_generales': paciente.notasGenerales,
         'alergias': paciente.alergias,
         'condiciones_medicas': paciente.condicionesMedicas,
+        'afecciones_cutaneas': paciente.afeccionesCutaneas,
+        'tatuajes': paciente.tatuajes,
+        'cirugia_plastica': paciente.cirugiaPlastica,
+        'antecedentes_medicos': paciente.antecedentesMedicos,
+        'ubicacion_lesiones': paciente.ubicacionLesiones,
+        'tipo_piel': paciente.tipoPiel,
+        'cicatrizacion': paciente.cicatrizacion,
+        'diagnostico_visual': paciente.diagnosticoVisual,
+        'diagnostico_tactil': paciente.diagnosticoTactil,
       }),
     );
 
@@ -197,6 +215,17 @@ class WebApiClient implements ApiClient {
         'productos_usados': sesion.productosUsados,
         'precio_cobrado': sesion.precioCobrado,
         'pagado': sesion.pagado,
+        'tipo': sesion.tipo,
+        'peso': sesion.peso,
+        'altura': sesion.altura,
+        'imc': sesion.imc,
+        'grasa_corporal': sesion.grasaCorporal,
+        'agua_corporal': sesion.aguaCorporal,
+        'medida_cadera': sesion.medidaCadera,
+        'medida_cintura': sesion.medidaCintura,
+        'medida_brazos': sesion.medidaBrazos,
+        'medida_pecho': sesion.medidaPecho,
+        'medida_piernas': sesion.medidaPiernas,
       }),
     );
     if (response.statusCode == 201 || response.statusCode == 200) {
@@ -231,6 +260,17 @@ class WebApiClient implements ApiClient {
   }
 
   @override
+  Future<List<Sesion>> getSesionesCorporales({required PlatformInt64 pacienteId}) async {
+    final uri = Uri.parse('$baseUrl/pacientes/${pacienteId.toInt()}/corporal');
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return (json as List).map((item) => _parseSesion(item)).toList();
+    }
+    throw Exception('Failed to load sesiones corporales');
+  }
+
+  @override
   Future<Sesion?> getSesion({required PlatformInt64 id}) async {
     final uri = Uri.parse('$baseUrl/sesiones/${id.toInt()}');
     final response = await http.get(uri);
@@ -257,6 +297,17 @@ class WebApiClient implements ApiClient {
         'productos_usados': sesion.productosUsados,
         'precio_cobrado': sesion.precioCobrado,
         'pagado': sesion.pagado,
+        'tipo': sesion.tipo,
+        'peso': sesion.peso,
+        'altura': sesion.altura,
+        'imc': sesion.imc,
+        'grasa_corporal': sesion.grasaCorporal,
+        'agua_corporal': sesion.aguaCorporal,
+        'medida_cadera': sesion.medidaCadera,
+        'medida_cintura': sesion.medidaCintura,
+        'medida_brazos': sesion.medidaBrazos,
+        'medida_pecho': sesion.medidaPecho,
+        'medida_piernas': sesion.medidaPiernas,
       }),
     );
     if (response.statusCode != 200 && response.statusCode != 204) {
@@ -344,6 +395,15 @@ class WebApiClient implements ApiClient {
       notasGenerales: json['notas_generales'],
       alergias: json['alergias'],
       condicionesMedicas: json['condiciones_medicas'],
+      afeccionesCutaneas: json['afecciones_cutaneas'],
+      tatuajes: json['tatuajes'],
+      cirugiaPlastica: json['cirugia_plastica'],
+      antecedentesMedicos: json['antecedentes_medicos'],
+      ubicacionLesiones: json['ubicacion_lesiones'],
+      tipoPiel: json['tipo_piel'],
+      cicatrizacion: json['cicatrizacion'],
+      diagnosticoVisual: json['diagnostico_visual'],
+      diagnosticoTactil: json['diagnostico_tactil'],
       fechaRegistro: json['fecha_registro'] ?? '',
       activo: json['activo'] ?? true,
     );
@@ -372,6 +432,17 @@ class WebApiClient implements ApiClient {
       precioCobrado: (json['precio_cobrado'] as num?)?.toDouble(),
       pagado: json['pagado'] ?? false,
       createdAt: json['created_at'] ?? '',
+      tipo: json['tipo'],
+      peso: json['peso'],
+      altura: (json['altura'] as num?)?.toDouble(),
+      imc: (json['imc'] as num?)?.toDouble(),
+      grasaCorporal: (json['grasa_corporal'] as num?)?.toDouble(),
+      aguaCorporal: (json['agua_corporal'] as num?)?.toDouble(),
+      medidaCadera: json['medida_cadera'],
+      medidaCintura: json['medida_cintura'],
+      medidaBrazos: json['medida_brazos'],
+      medidaPecho: json['medida_pecho'],
+      medidaPiernas: json['medida_piernas'],
     );
   }
 

@@ -2,6 +2,8 @@ name: Release Windows Desktop
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*.*.*'
   workflow_dispatch:  # Para poder lanzar manualmente
@@ -26,7 +28,7 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           $version = $tag.TrimStart('v')
-          if ([string]::IsNullOrEmpty($version)) { $version = "0.1.0" }
+          if ([string]::IsNullOrEmpty($version) -or $version -eq "main") { $version = "1.0.3" }
           Write-Output "APP_VERSION=$version" >> $env:GITHUB_OUTPUT
 
       - name: Install Rust Toolchain
@@ -61,6 +63,7 @@ jobs:
         shell: pwsh
         run: |
           Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "build\DataCare-Windows-Portable-v${{ steps.get_version.outputs.APP_VERSION }}.zip"
+          Copy-Item "build\DataCare-Windows-Portable-v${{ steps.get_version.outputs.APP_VERSION }}.zip" -Destination "build\datacare-windows.zip"
 
       - name: Generate Checksums
         shell: pwsh
@@ -81,7 +84,9 @@ jobs:
           name: windows-release
           path: |
             build/installer/*.exe
+            build/windows/x64/runner/Release/datacare.exe
             build/DataCare-Windows-Portable-*.zip
+            build/datacare-windows.zip
             build/checksums-sha256.txt
 
       - name: Publish GitHub Release
@@ -90,7 +95,9 @@ jobs:
         with:
           files: |
             build/installer/*.exe
+            build/windows/x64/runner/Release/datacare.exe
             build/DataCare-Windows-Portable-*.zip
+            build/datacare-windows.zip
             build/checksums-sha256.txt
           generate_release_notes: true
           draft: false

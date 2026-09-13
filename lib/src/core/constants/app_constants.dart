@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'DataCare';
-  static const String appVersion = 'v1.0.2';
+  static const String appVersion = 'v1.0.3';
   
   // Color de marca (rosa mauve — Beauty Sweet Care Spa)
   static const Color brandColor = Color(0xFFC77D9C);

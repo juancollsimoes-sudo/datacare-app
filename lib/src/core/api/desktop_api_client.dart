@@ -75,6 +75,11 @@ class DesktopApiClient implements ApiClient {
     return db_api.updateSesion(sesion: sesion);
   }
 
+  @override
+  Future<List<Sesion>> getSesionesCorporales({required PlatformInt64 pacienteId}) {
+    return db_api.getSesionesCorporales(pacienteId: pacienteId);
+  }
+
   // Dashboard
   @override
   Future<DashboardStats> getDashboardStats() {

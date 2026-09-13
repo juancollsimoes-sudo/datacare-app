@@ -79,6 +79,11 @@ pub fn update_sesion(sesion: ActualizarSesion) -> Result<(), String> {
     SesionRepo::actualizar(&conn, &sesion).map_err(|e| e.to_string_err())
 }
 
+pub fn get_sesiones_corporales(paciente_id: i64) -> Result<Vec<Sesion>, String> {
+    let conn = DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;
+    SesionRepo::listar_corporales_por_paciente(&conn, paciente_id).map_err(|e| e.to_string_err())
+}
+
 // --- STATS API ---
 pub fn get_dashboard_stats() -> Result<crate::db::models::DashboardStats, String> {
     let conn = crate::db::DatabaseManager::get_conn().map_err(|e| e.to_string_err())?;

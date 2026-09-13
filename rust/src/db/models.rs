@@ -12,6 +12,15 @@ pub struct Paciente {
     pub notas_generales: Option<String>,
     pub alergias: Option<String>,
     pub condiciones_medicas: Option<String>,
+    pub afecciones_cutaneas: Option<String>,
+    pub tatuajes: Option<String>,
+    pub cirugia_plastica: Option<String>,
+    pub antecedentes_medicos: Option<String>,
+    pub ubicacion_lesiones: Option<String>,
+    pub tipo_piel: Option<String>,
+    pub cicatrizacion: Option<String>,
+    pub diagnostico_visual: Option<String>,
+    pub diagnostico_tactil: Option<String>,
     pub fecha_registro: String,
     pub activo: bool,
 }
@@ -27,6 +36,15 @@ pub struct NuevoPaciente {
     pub notas_generales: Option<String>,
     pub alergias: Option<String>,
     pub condiciones_medicas: Option<String>,
+    pub afecciones_cutaneas: Option<String>,
+    pub tatuajes: Option<String>,
+    pub cirugia_plastica: Option<String>,
+    pub antecedentes_medicos: Option<String>,
+    pub ubicacion_lesiones: Option<String>,
+    pub tipo_piel: Option<String>,
+    pub cicatrizacion: Option<String>,
+    pub diagnostico_visual: Option<String>,
+    pub diagnostico_tactil: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,6 +59,15 @@ pub struct ActualizarPaciente {
     pub notas_generales: Option<String>,
     pub alergias: Option<String>,
     pub condiciones_medicas: Option<String>,
+    pub afecciones_cutaneas: Option<String>,
+    pub tatuajes: Option<String>,
+    pub cirugia_plastica: Option<String>,
+    pub antecedentes_medicos: Option<String>,
+    pub ubicacion_lesiones: Option<String>,
+    pub tipo_piel: Option<String>,
+    pub cicatrizacion: Option<String>,
+    pub diagnostico_visual: Option<String>,
+    pub diagnostico_tactil: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -82,6 +109,17 @@ pub struct Sesion {
     pub precio_cobrado: Option<f64>,
     pub pagado: bool,
     pub created_at: String,
+    pub tipo: Option<String>,
+    pub peso: Option<String>,
+    pub altura: Option<f64>,
+    pub imc: Option<f64>,
+    pub grasa_corporal: Option<f64>,
+    pub agua_corporal: Option<f64>,
+    pub medida_cadera: Option<String>,
+    pub medida_cintura: Option<String>,
+    pub medida_brazos: Option<String>,
+    pub medida_pecho: Option<String>,
+    pub medida_piernas: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,6 +132,17 @@ pub struct NuevaSesion {
     pub productos_usados: Option<String>,
     pub precio_cobrado: Option<f64>,
     pub pagado: bool,
+    pub tipo: Option<String>,
+    pub peso: Option<String>,
+    pub altura: Option<f64>,
+    pub imc: Option<f64>,
+    pub grasa_corporal: Option<f64>,
+    pub agua_corporal: Option<f64>,
+    pub medida_cadera: Option<String>,
+    pub medida_cintura: Option<String>,
+    pub medida_brazos: Option<String>,
+    pub medida_pecho: Option<String>,
+    pub medida_piernas: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,6 +155,17 @@ pub struct ActualizarSesion {
     pub productos_usados: Option<String>,
     pub precio_cobrado: Option<f64>,
     pub pagado: bool,
+    pub tipo: Option<String>,
+    pub peso: Option<String>,
+    pub altura: Option<f64>,
+    pub imc: Option<f64>,
+    pub grasa_corporal: Option<f64>,
+    pub agua_corporal: Option<f64>,
+    pub medida_cadera: Option<String>,
+    pub medida_cintura: Option<String>,
+    pub medida_brazos: Option<String>,
+    pub medida_pecho: Option<String>,
+    pub medida_piernas: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

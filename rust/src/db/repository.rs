@@ -10,11 +10,15 @@ impl PacienteRepo {
         conn.execute(
             "INSERT INTO pacientes (
                 nombre, apellido, fecha_nacimiento, telefono, email, direccion, 
-                notas_generales, alergias, condiciones_medicas
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                notas_generales, alergias, condiciones_medicas,
+                afecciones_cutaneas, tatuajes, cirugia_plastica, antecedentes_medicos,
+                ubicacion_lesiones, tipo_piel, cicatrizacion, diagnostico_visual, diagnostico_tactil
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
             params![
                 p.nombre, p.apellido, p.fecha_nacimiento, p.telefono, p.email,
-                p.direccion, p.notas_generales, p.alergias, p.condiciones_medicas
+                p.direccion, p.notas_generales, p.alergias, p.condiciones_medicas,
+                p.afecciones_cutaneas, p.tatuajes, p.cirugia_plastica, p.antecedentes_medicos,
+                p.ubicacion_lesiones, p.tipo_piel, p.cicatrizacion, p.diagnostico_visual, p.diagnostico_tactil
             ],
         )?;
         Ok(conn.last_insert_rowid())
@@ -41,7 +45,9 @@ impl PacienteRepo {
 
         let mut stmt = conn.prepare(
             "SELECT id, nombre, apellido, fecha_nacimiento, telefono, email, direccion,
-                    notas_generales, alergias, condiciones_medicas, fecha_registro, activo
+                    notas_generales, alergias, condiciones_medicas, fecha_registro, activo,
+                    afecciones_cutaneas, tatuajes, cirugia_plastica, antecedentes_medicos,
+                    ubicacion_lesiones, tipo_piel, cicatrizacion, diagnostico_visual, diagnostico_tactil
              FROM pacientes
              WHERE activo = 1 AND (nombre LIKE ?1 OR apellido LIKE ?1)
              ORDER BY apellido, nombre
@@ -63,6 +69,15 @@ impl PacienteRepo {
                 condiciones_medicas: row.get(9)?,
                 fecha_registro: row.get(10)?,
                 activo: activo_int > 0,
+                afecciones_cutaneas: row.get(12)?,
+                tatuajes: row.get(13)?,
+                cirugia_plastica: row.get(14)?,
+                antecedentes_medicos: row.get(15)?,
+                ubicacion_lesiones: row.get(16)?,
+                tipo_piel: row.get(17)?,
+                cicatrizacion: row.get(18)?,
+                diagnostico_visual: row.get(19)?,
+                diagnostico_tactil: row.get(20)?,
             })
         })?;
 
@@ -82,7 +97,9 @@ impl PacienteRepo {
     pub fn obtener(conn: &Connection, id: i64) -> Result<Option<Paciente>, AppError> {
         let mut stmt = conn.prepare(
             "SELECT id, nombre, apellido, fecha_nacimiento, telefono, email, direccion,
-                    notas_generales, alergias, condiciones_medicas, fecha_registro, activo
+                    notas_generales, alergias, condiciones_medicas, fecha_registro, activo,
+                    afecciones_cutaneas, tatuajes, cirugia_plastica, antecedentes_medicos,
+                    ubicacion_lesiones, tipo_piel, cicatrizacion, diagnostico_visual, diagnostico_tactil
              FROM pacientes WHERE id = ?1"
         )?;
         
@@ -101,6 +118,15 @@ impl PacienteRepo {
                 condiciones_medicas: row.get(9)?,
                 fecha_registro: row.get(10)?,
                 activo: activo_int > 0,
+                afecciones_cutaneas: row.get(12)?,
+                tatuajes: row.get(13)?,
+                cirugia_plastica: row.get(14)?,
+                antecedentes_medicos: row.get(15)?,
+                ubicacion_lesiones: row.get(16)?,
+                tipo_piel: row.get(17)?,
+                cicatrizacion: row.get(18)?,
+                diagnostico_visual: row.get(19)?,
+                diagnostico_tactil: row.get(20)?,
             })
         }).optional()?;
 
@@ -112,11 +138,15 @@ impl PacienteRepo {
             "UPDATE pacientes SET
                 nombre = ?1, apellido = ?2, fecha_nacimiento = ?3, telefono = ?4,
                 email = ?5, direccion = ?6, notas_generales = ?7, alergias = ?8,
-                condiciones_medicas = ?9
-             WHERE id = ?10",
+                condiciones_medicas = ?9, afecciones_cutaneas = ?10, tatuajes = ?11,
+                cirugia_plastica = ?12, antecedentes_medicos = ?13, ubicacion_lesiones = ?14,
+                tipo_piel = ?15, cicatrizacion = ?16, diagnostico_visual = ?17, diagnostico_tactil = ?18
+             WHERE id = ?19",
             params![
                 p.nombre, p.apellido, p.fecha_nacimiento, p.telefono, p.email,
                 p.direccion, p.notas_generales, p.alergias, p.condiciones_medicas,
+                p.afecciones_cutaneas, p.tatuajes, p.cirugia_plastica, p.antecedentes_medicos,
+                p.ubicacion_lesiones, p.tipo_piel, p.cicatrizacion, p.diagnostico_visual, p.diagnostico_tactil,
                 p.id
             ],
         )?;
@@ -208,17 +238,54 @@ impl TratamientoRepo {
 // --- SESIONES ---
 pub struct SesionRepo;
 
+fn row_to_sesion(row: &rusqlite::Row) -> Result<Sesion, rusqlite::Error> {
+    let pagado_int: i32 = row.get(8)?;
+    Ok(Sesion {
+        id: row.get(0)?,
+        paciente_id: row.get(1)?,
+        tratamiento_id: row.get(2)?,
+        fecha: row.get(3)?,
+        notas_sesion: row.get(4)?,
+        observaciones: row.get(5)?,
+        productos_usados: row.get(6)?,
+        precio_cobrado: row.get(7)?,
+        pagado: pagado_int > 0,
+        created_at: row.get(9)?,
+        tipo: row.get(10)?,
+        peso: row.get(11)?,
+        altura: row.get(12)?,
+        imc: row.get(13)?,
+        grasa_corporal: row.get(14)?,
+        agua_corporal: row.get(15)?,
+        medida_cadera: row.get(16)?,
+        medida_cintura: row.get(17)?,
+        medida_brazos: row.get(18)?,
+        medida_pecho: row.get(19)?,
+        medida_piernas: row.get(20)?,
+    })
+}
+
+const SESION_COLUMNS: &str = "id, paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
+        productos_usados, precio_cobrado, pagado, created_at,
+        tipo, peso, altura, imc, grasa_corporal, agua_corporal,
+        medida_cadera, medida_cintura, medida_brazos, medida_pecho, medida_piernas";
+
 impl SesionRepo {
     pub fn crear(conn: &Connection, s: &NuevaSesion) -> Result<i64, AppError> {
         let pagado_int = if s.pagado { 1 } else { 0 };
+        let tipo = s.tipo.as_deref().unwrap_or("facial");
         conn.execute(
             "INSERT INTO sesiones (
                 paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
-                productos_usados, precio_cobrado, pagado
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                productos_usados, precio_cobrado, pagado, tipo, peso, altura,
+                imc, grasa_corporal, agua_corporal, medida_cadera, medida_cintura,
+                medida_brazos, medida_pecho, medida_piernas
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
             params![
                 s.paciente_id, s.tratamiento_id, s.fecha, s.notas_sesion,
-                s.observaciones, s.productos_usados, s.precio_cobrado, pagado_int
+                s.observaciones, s.productos_usados, s.precio_cobrado, pagado_int,
+                tipo, s.peso, s.altura, s.imc, s.grasa_corporal, s.agua_corporal,
+                s.medida_cadera, s.medida_cintura, s.medida_brazos, s.medida_pecho, s.medida_piernas
             ],
         )?;
         Ok(conn.last_insert_rowid())
@@ -238,29 +305,14 @@ impl SesionRepo {
             |row| row.get(0),
         )?;
 
-        let mut stmt = conn.prepare(
-            "SELECT id, paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
-                    productos_usados, precio_cobrado, pagado, created_at
-             FROM sesiones
-             WHERE paciente_id = ?1
-             ORDER BY fecha DESC
-             LIMIT ?2 OFFSET ?3"
-        )?;
+        let query = format!(
+            "SELECT {} FROM sesiones WHERE paciente_id = ?1 ORDER BY fecha DESC, id DESC LIMIT ?2 OFFSET ?3",
+            SESION_COLUMNS
+        );
+        let mut stmt = conn.prepare(&query)?;
 
         let iter = stmt.query_map(params![paciente_id, page_size, offset], |row| {
-            let pagado_int: i32 = row.get(8)?;
-            Ok(Sesion {
-                id: row.get(0)?,
-                paciente_id: row.get(1)?,
-                tratamiento_id: row.get(2)?,
-                fecha: row.get(3)?,
-                notas_sesion: row.get(4)?,
-                observaciones: row.get(5)?,
-                productos_usados: row.get(6)?,
-                precio_cobrado: row.get(7)?,
-                pagado: pagado_int > 0,
-                created_at: row.get(9)?,
-            })
+            row_to_sesion(row)
         })?;
 
         let mut items = Vec::new();
@@ -276,29 +328,38 @@ impl SesionRepo {
         })
     }
 
+    pub fn listar_corporales_por_paciente(
+        conn: &Connection,
+        paciente_id: i64,
+    ) -> Result<Vec<Sesion>, AppError> {
+        let query = format!(
+            "SELECT {} FROM sesiones 
+             WHERE paciente_id = ?1 AND (tipo = 'corporal' OR grasa_corporal IS NOT NULL OR peso IS NOT NULL OR imc IS NOT NULL) 
+             ORDER BY fecha ASC, id ASC",
+            SESION_COLUMNS
+        );
+        let mut stmt = conn.prepare(&query)?;
+
+        let iter = stmt.query_map(params![paciente_id], |row| {
+            row_to_sesion(row)
+        })?;
+
+        let mut items = Vec::new();
+        for item in iter {
+            items.push(item?);
+        }
+        Ok(items)
+    }
+
     pub fn list_ingresos(conn: &Connection) -> Result<Vec<Sesion>, AppError> {
-        let mut stmt = conn.prepare(
-            "SELECT id, paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
-                    productos_usados, precio_cobrado, pagado, created_at
-             FROM sesiones
-             WHERE precio_cobrado > 0 AND pagado = 1
-             ORDER BY fecha DESC"
-        )?;
+        let query = format!(
+            "SELECT {} FROM sesiones WHERE precio_cobrado > 0 AND pagado = 1 ORDER BY fecha DESC",
+            SESION_COLUMNS
+        );
+        let mut stmt = conn.prepare(&query)?;
 
         let iter = stmt.query_map([], |row| {
-            let pagado_int: i32 = row.get(8)?;
-            Ok(Sesion {
-                id: row.get(0)?,
-                paciente_id: row.get(1)?,
-                tratamiento_id: row.get(2)?,
-                fecha: row.get(3)?,
-                notas_sesion: row.get(4)?,
-                observaciones: row.get(5)?,
-                productos_usados: row.get(6)?,
-                precio_cobrado: row.get(7)?,
-                pagado: pagado_int > 0,
-                created_at: row.get(9)?,
-            })
+            row_to_sesion(row)
         })?;
 
         let mut items = Vec::new();
@@ -309,39 +370,31 @@ impl SesionRepo {
     }
 
     pub fn obtener(conn: &Connection, id: i64) -> Result<Option<Sesion>, AppError> {
-        let mut stmt = conn.prepare(
-            "SELECT id, paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
-                    productos_usados, precio_cobrado, pagado, created_at
-             FROM sesiones WHERE id = ?1"
-        )?;
+        let query = format!("SELECT {} FROM sesiones WHERE id = ?1", SESION_COLUMNS);
+        let mut stmt = conn.prepare(&query)?;
         let s = stmt.query_row(params![id], |row| {
-            let pagado_int: i32 = row.get(8)?;
-            Ok(Sesion {
-                id: row.get(0)?,
-                paciente_id: row.get(1)?,
-                tratamiento_id: row.get(2)?,
-                fecha: row.get(3)?,
-                notas_sesion: row.get(4)?,
-                observaciones: row.get(5)?,
-                productos_usados: row.get(6)?,
-                precio_cobrado: row.get(7)?,
-                pagado: pagado_int > 0,
-                created_at: row.get(9)?,
-            })
+            row_to_sesion(row)
         }).optional()?;
         Ok(s)
     }
 
     pub fn actualizar(conn: &Connection, s: &ActualizarSesion) -> Result<(), AppError> {
         let pagado_int = if s.pagado { 1 } else { 0 };
+        let tipo = s.tipo.as_deref().unwrap_or("facial");
         conn.execute(
             "UPDATE sesiones SET
                 tratamiento_id = ?1, fecha = ?2, notas_sesion = ?3, observaciones = ?4,
-                productos_usados = ?5, precio_cobrado = ?6, pagado = ?7
-             WHERE id = ?8",
+                productos_usados = ?5, precio_cobrado = ?6, pagado = ?7,
+                tipo = ?8, peso = ?9, altura = ?10, imc = ?11, grasa_corporal = ?12,
+                agua_corporal = ?13, medida_cadera = ?14, medida_cintura = ?15,
+                medida_brazos = ?16, medida_pecho = ?17, medida_piernas = ?18
+             WHERE id = ?19",
             params![
                 s.tratamiento_id, s.fecha, s.notas_sesion, s.observaciones,
-                s.productos_usados, s.precio_cobrado, pagado_int, s.id
+                s.productos_usados, s.precio_cobrado, pagado_int,
+                tipo, s.peso, s.altura, s.imc, s.grasa_corporal, s.agua_corporal,
+                s.medida_cadera, s.medida_cintura, s.medida_brazos, s.medida_pecho,
+                s.medida_piernas, s.id
             ],
         )?;
         Ok(())

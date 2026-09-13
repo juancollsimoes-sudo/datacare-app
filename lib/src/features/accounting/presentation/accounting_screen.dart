@@ -133,11 +133,10 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                             title: const Text('Modificar'),
                             onTap: () {
                               Navigator.pop(context);
-                              if (isExpense) {
-                                _showAddExpenseDialog(item as Gasto);
-                              } else {
-                                final sesion = item as Sesion;
-                                context.go('/sessions/edit/${sesion.pacienteId}', extra: sesion);
+                              if (item is Gasto) {
+                                _showAddExpenseDialog(item);
+                              } else if (item is Sesion) {
+                                context.go('/sessions/edit/${item.pacienteId}', extra: item);
                               }
                             },
                           ),
@@ -146,12 +145,12 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                             title: const Text('Eliminar', style: TextStyle(color: Colors.red)),
                             onTap: () async {
                               Navigator.pop(context);
-                              if (isExpense) {
+                              if (item is Gasto) {
                                 try {
-                                  await deleteGasto(id: (item as Gasto).id);
+                                  await deleteGasto(id: item.id);
                                   _loadData();
                                 } catch (e) {
-                                  if (mounted) {
+                                  if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('Error al eliminar gasto: $e')),
                                     );
@@ -310,7 +309,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
               dotData: const FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
               ),
             ),
             LineChartBarData(
@@ -322,7 +321,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
               dotData: const FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
               ),
             ),
           ],

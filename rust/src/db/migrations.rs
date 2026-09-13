@@ -113,6 +113,46 @@ pub fn apply_migrations(conn: &mut Connection) -> Result<(), AppError> {
             );
             "#,
         ),
+        (
+            3,
+            "Add corporal measurement columns to sesiones",
+            r#"
+            ALTER TABLE sesiones ADD COLUMN tipo TEXT DEFAULT 'facial';
+            ALTER TABLE sesiones ADD COLUMN peso TEXT;
+            ALTER TABLE sesiones ADD COLUMN altura REAL;
+            ALTER TABLE sesiones ADD COLUMN imc REAL;
+            ALTER TABLE sesiones ADD COLUMN grasa_corporal REAL;
+            ALTER TABLE sesiones ADD COLUMN agua_corporal REAL;
+            ALTER TABLE sesiones ADD COLUMN medida_cadera TEXT;
+            ALTER TABLE sesiones ADD COLUMN medida_cintura TEXT;
+            ALTER TABLE sesiones ADD COLUMN medida_brazos TEXT;
+            ALTER TABLE sesiones ADD COLUMN medida_pecho TEXT;
+            ALTER TABLE sesiones ADD COLUMN medida_piernas TEXT;
+            CREATE INDEX IF NOT EXISTS idx_sesiones_tipo ON sesiones(paciente_id, tipo);
+            "#,
+        ),
+        (
+            4,
+            "Clean up corrupted dates in sesiones",
+            r#"
+            UPDATE sesiones SET fecha = '2025-10-24' WHERE fecha LIKE '1900%';
+            "#,
+        ),
+        (
+            5,
+            "Add clinical and facial diagnostic columns to pacientes",
+            r#"
+            ALTER TABLE pacientes ADD COLUMN afecciones_cutaneas TEXT;
+            ALTER TABLE pacientes ADD COLUMN tatuajes TEXT;
+            ALTER TABLE pacientes ADD COLUMN cirugia_plastica TEXT;
+            ALTER TABLE pacientes ADD COLUMN antecedentes_medicos TEXT;
+            ALTER TABLE pacientes ADD COLUMN ubicacion_lesiones TEXT;
+            ALTER TABLE pacientes ADD COLUMN tipo_piel TEXT;
+            ALTER TABLE pacientes ADD COLUMN cicatrizacion TEXT;
+            ALTER TABLE pacientes ADD COLUMN diagnostico_visual TEXT;
+            ALTER TABLE pacientes ADD COLUMN diagnostico_tactil TEXT;
+            "#,
+        ),
     ];
 
     let tx = conn.transaction()?;
@@ -136,4 +176,48 @@ pub fn apply_migrations(conn: &mut Connection) -> Result<(), AppError> {
 
     tx.commit()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_apply_migrations() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        apply_migrations(&mut conn).unwrap();
+
+        let v: i32 = conn.query_row("SELECT MAX(version) FROM schema_version", [], |r| r.get(0)).unwrap();
+        assert_eq!(v, 5, "Schema version should be 5");
+
+        // Check if clinical columns exist in pacientes
+        conn.execute(
+            "INSERT INTO pacientes (
+                nombre, apellido, tipo_piel, cicatrizacion, diagnostico_visual, diagnostico_tactil,
+                afecciones_cutaneas, tatuajes, cirugia_plastica, antecedentes_medicos, ubicacion_lesiones
+            ) VALUES (
+                'Test', 'Patient', 'Mixta', 'Normal', 'Discromías', 'Tacto rugoso',
+                'Rosácea', 'No', 'No', 'Ninguno', 'Mejillas'
+            )",
+            [],
+        ).unwrap();
+        let paciente_id = conn.last_insert_rowid();
+
+        let tipo_piel: String = conn.query_row("SELECT tipo_piel FROM pacientes WHERE id = ?", [paciente_id], |r| r.get(0)).unwrap();
+        assert_eq!(tipo_piel, "Mixta");
+
+        conn.execute(
+            r#"INSERT INTO sesiones (
+                paciente_id, fecha, tipo, peso, altura, imc, grasa_corporal, agua_corporal,
+                medida_cadera, medida_cintura, medida_brazos, medida_pecho, medida_piernas
+            ) VALUES (?, '2026-09-13', 'corporal', '65.5', 1.65, 24.1, 28.5, 52.0, '95', '70', '28', '88', '54')"#,
+            [paciente_id],
+        ).unwrap();
+
+        let tipo: String = conn.query_row("SELECT tipo FROM sesiones WHERE paciente_id = ?", [paciente_id], |r| r.get(0)).unwrap();
+        assert_eq!(tipo, "corporal");
+
+        let grasa: f64 = conn.query_row("SELECT grasa_corporal FROM sesiones WHERE paciente_id = ?", [paciente_id], |r| r.get(0)).unwrap();
+        assert_eq!(grasa, 28.5);
+    }
 }

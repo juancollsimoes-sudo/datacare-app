@@ -14,6 +14,7 @@ import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/accounting/presentation/accounting_screen.dart';
 import '../../features/patients/presentation/patient_detail_screen.dart';
 import '../../features/patients/presentation/patient_form_screen.dart';
+import '../../features/patients/presentation/patient_body_evolution_screen.dart';
 import '../../features/treatments/presentation/treatment_form_screen.dart';
 import '../../features/sessions/presentation/session_form_screen.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
@@ -47,6 +48,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (context, state) => PatientFormScreen(id: state.pathParameters['id']),
+                  ),
+                  GoRoute(
+                    path: 'body-evolution',
+                    builder: (context, state) => PatientBodyEvolutionScreen(patientId: state.pathParameters['id']!),
                   ),
                 ],
               ),

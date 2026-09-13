@@ -1,9 +1,9 @@
 use axum::{
     extract::{Multipart, Path, Query},
-    routing::{delete, get, post, put},
+    routing::{delete, get, post},
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tower_http::cors::{Any, CorsLayer};
 use std::net::SocketAddr;
 
@@ -32,6 +32,7 @@ pub async fn start_server(port: u16) {
         .route("/sesiones", post(create_sesion))
         .route("/sesiones/{id}", get(get_sesion).put(update_sesion))
         .route("/pacientes/{id}/sesiones", get(list_sesiones))
+        .route("/pacientes/{id}/corporal", get(get_sesiones_corporales))
         .route("/sesiones/{id}/fotos", get(list_fotos_sesion))
         .route("/pacientes/{id}/fotos", get(list_fotos_paciente))
         .route("/fotos", post(upload_photo))
@@ -50,8 +51,16 @@ pub async fn start_server(port: u16) {
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("Server running on http://{}", addr);
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = match tokio::net::TcpListener::bind(addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("Failed to bind server on {}: {}", addr, e);
+            return;
+        }
+    };
+    if let Err(e) = axum::serve(listener, app).await {
+        eprintln!("Server error: {}", e);
+    }
 }
 
 async fn list_pacientes(Query(q): Query<PaginationQuery>) -> Result<Json<PaginatedPacientes>, (axum::http::StatusCode, String)> {
@@ -141,6 +150,13 @@ async fn list_sesiones(Path(paciente_id): Path<i64>, Query(q): Query<PaginationQ
     let page = q.page.unwrap_or(1);
     let page_size = q.page_size.unwrap_or(20);
     match db_api::list_sesiones_by_paciente(paciente_id, page, page_size) {
+        Ok(res) => Ok(Json(res)),
+        Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e)),
+    }
+}
+
+async fn get_sesiones_corporales(Path(paciente_id): Path<i64>) -> Result<Json<Vec<Sesion>>, (axum::http::StatusCode, String)> {
+    match db_api::get_sesiones_corporales(paciente_id) {
         Ok(res) => Ok(Json(res)),
         Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e)),
     }

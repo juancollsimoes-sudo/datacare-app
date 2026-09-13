@@ -75,6 +75,11 @@ final sessionDetailProvider = FutureProvider.family<Sesion?, PlatformInt64>((ref
   return await apiClient.getSesion(id: id);
 });
 
+final patientCorporalSessionsProvider = FutureProvider.autoDispose.family<List<Sesion>, PlatformInt64>((ref, pacienteId) async {
+  final apiClient = ref.read(apiClientProvider);
+  return await apiClient.getSesionesCorporales(pacienteId: pacienteId);
+});
+
 final sessionsActionProvider = Provider((ref) {
   return SessionsActionService(ref);
 });
@@ -87,6 +92,7 @@ class SessionsActionService {
     final apiClient = ref.read(apiClientProvider);
     await apiClient.createSesion(sesion: sesion);
     ref.invalidate(patientSessionsProvider(sesion.pacienteId));
+    ref.invalidate(patientCorporalSessionsProvider(sesion.pacienteId));
   }
 
   Future<void> editSession(ActualizarSesion sesion, PlatformInt64 pacienteId) async {
@@ -94,5 +100,6 @@ class SessionsActionService {
     await apiClient.updateSesion(sesion: sesion);
     ref.invalidate(sessionDetailProvider(sesion.id));
     ref.invalidate(patientSessionsProvider(pacienteId));
+    ref.invalidate(patientCorporalSessionsProvider(pacienteId));
   }
 }

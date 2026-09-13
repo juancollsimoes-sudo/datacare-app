@@ -71,6 +71,9 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   }
 
   Widget _buildSessionDetails(Sesion session) {
+    final theme = Theme.of(context);
+    final isCorporal = session.tipo == 'corporal';
+
     return Card(
       margin: const EdgeInsets.all(8.0),
       child: Padding(
@@ -81,7 +84,44 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Detalles de la Sesión #${session.id}', style: Theme.of(context).textTheme.titleLarge),
+                Row(
+                  children: [
+                    Text('Detalles de la Sesión #${session.id}', style: theme.textTheme.titleLarge),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isCorporal
+                            ? theme.colorScheme.tertiaryContainer
+                            : theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isCorporal ? Icons.accessibility_new : Icons.face,
+                            size: 14,
+                            color: isCorporal
+                                ? theme.colorScheme.onTertiaryContainer
+                                : theme.colorScheme.onPrimaryContainer,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isCorporal ? 'Corporal' : 'Facial',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isCorporal
+                                  ? theme.colorScheme.onTertiaryContainer
+                                  : theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () {
@@ -93,8 +133,41 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Fecha: ${session.fecha}', style: Theme.of(context).textTheme.bodyLarge),
+            Text('Fecha: ${session.fecha.split('T')[0]}', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 8),
+            if (isCorporal && (session.peso != null || session.grasaCorporal != null || session.imc != null)) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  if (session.peso != null && session.peso!.isNotEmpty)
+                    Chip(
+                      avatar: const Icon(Icons.scale_outlined, size: 16),
+                      label: Text('Peso: ${session.peso} kg'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (session.grasaCorporal != null)
+                    Chip(
+                      avatar: const Icon(Icons.percent_rounded, size: 16),
+                      label: Text('Grasa: ${session.grasaCorporal}%'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (session.imc != null)
+                    Chip(
+                      avatar: const Icon(Icons.speed_outlined, size: 16),
+                      label: Text('IMC: ${session.imc}'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (session.aguaCorporal != null)
+                    Chip(
+                      avatar: const Icon(Icons.water_drop_outlined, size: 16),
+                      label: Text('Agua: ${session.aguaCorporal}%'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             Text('Notas: ${session.notasSesion ?? 'Sin notas'}'),
             const Spacer(),
             SizedBox(
@@ -176,13 +249,59 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                         itemCount: selectedEvents.length,
                         itemBuilder: (context, index) {
                           final event = selectedEvents[index];
+                          final isCorporal = event.tipo == 'corporal';
+                          final theme = Theme.of(context);
+
                           return MouseRegion(
                             onEnter: (_) => _onSessionHoverEntered(event),
                             onExit: (_) => _onSessionHoverExited(),
                             child: ListTile(
-                              leading: const Icon(Icons.event_note),
-                              title: Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
-                              subtitle: Text(event.notasSesion ?? 'Sin notas'),
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isCorporal
+                                      ? theme.colorScheme.tertiaryContainer.withValues(alpha: 0.5)
+                                      : theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isCorporal ? Icons.accessibility_new : Icons.face,
+                                  size: 20,
+                                  color: isCorporal ? theme.colorScheme.tertiary : theme.colorScheme.primary,
+                                ),
+                              ),
+                              title: Row(
+                                children: [
+                                  Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isCorporal
+                                          ? theme.colorScheme.tertiaryContainer
+                                          : theme.colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      isCorporal ? 'Corporal' : 'Facial',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: isCorporal
+                                            ? theme.colorScheme.onTertiaryContainer
+                                            : theme.colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Text(
+                                isCorporal && (event.peso != null || event.grasaCorporal != null)
+                                    ? 'Peso: ${event.peso ?? '-'} kg | Grasa: ${event.grasaCorporal != null ? '${event.grasaCorporal}%' : '-'}'
+                                    : (event.notasSesion ?? 'Sin notas'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                               onTap: () {
                                 setState(() {
@@ -210,12 +329,44 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                               itemCount: upcomingSessions.length,
                               itemBuilder: (context, index) {
                                 final event = upcomingSessions[index];
+                                final isCorporal = event.tipo == 'corporal';
+                                final theme = Theme.of(context);
+
                                 return MouseRegion(
                                   onEnter: (_) => _onSessionHoverEntered(event),
                                   onExit: (_) => _onSessionHoverExited(),
                                   child: ListTile(
-                                    leading: const Icon(Icons.upcoming),
-                                    title: Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
+                                    leading: Icon(
+                                      isCorporal ? Icons.accessibility_new : Icons.face,
+                                      color: isCorporal ? theme.colorScheme.tertiary : theme.colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: isCorporal
+                                                ? theme.colorScheme.tertiaryContainer
+                                                : theme.colorScheme.primaryContainer,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            isCorporal ? 'Corporal' : 'Facial',
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              color: isCorporal
+                                                  ? theme.colorScheme.onTertiaryContainer
+                                                  : theme.colorScheme.onPrimaryContainer,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: const Icon(Icons.chevron_right, size: 16),
                                     onTap: () {
                                       setState(() {
                                         _selectedSession = event;

@@ -30,6 +30,7 @@ abstract class ApiClient {
   });
   Future<Sesion?> getSesion({required PlatformInt64 id});
   Future<void> updateSesion({required ActualizarSesion sesion});
+  Future<List<Sesion>> getSesionesCorporales({required PlatformInt64 pacienteId});
 
   // Dashboard
   Future<DashboardStats> getDashboardStats();

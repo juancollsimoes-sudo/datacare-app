@@ -13,13 +13,19 @@ pub struct DatabaseManager;
 
 impl DatabaseManager {
     pub fn init(db_path: &str) -> Result<(), AppError> {
+        if let Some(mutex) = DB_CONN.get() {
+            let mut conn = mutex.lock().map_err(|_| AppError::IoError("Failed to lock database".into()))?;
+            migrations::apply_migrations(&mut conn)?;
+            return Ok(());
+        }
+
         let mut conn = Connection::open(db_path)?;
         
         // Aplicar migraciones
         migrations::apply_migrations(&mut conn)?;
         
         // Guardar conexión en el estado global
-        DB_CONN.set(Mutex::new(conn)).map_err(|_| AppError::IoError("Database already initialized".into()))?;
+        let _ = DB_CONN.set(Mutex::new(conn));
         
         Ok(())
     }
