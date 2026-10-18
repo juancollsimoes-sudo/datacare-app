@@ -1,11 +1,40 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-import '../../../rust/api/db_api.dart';
+import '../../../core/api/api_provider.dart';
+import '../../../rust/api/pdf_api.dart';
 import '../../../rust/db/models.dart';
+
+bool isPersonalExpenseCategory(String? categoria) {
+  if (categoria == null) return false;
+  return categoria.trim().toLowerCase().contains('personal');
+}
+
+String spanishMonthName(int month) {
+  const names = [
+    '',
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ];
+  if (month >= 1 && month <= 12) return names[month];
+  return 'Mes';
+}
 
 class AccountingScreen extends ConsumerStatefulWidget {
   const AccountingScreen({super.key});
@@ -16,7 +45,10 @@ class AccountingScreen extends ConsumerStatefulWidget {
 
 class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   bool _isLoading = true;
-  List<dynamic> _transactions = []; // Will hold both Gasto and Sesion
+  List<Gasto> _gastos = [];
+  List<Sesion> _ingresos = [];
+  Map<int, String> _patientNames = {};
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
   @override
   void initState() {
@@ -27,20 +59,32 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final gastos = await listGastos();
-      final ingresos = await listIngresos();
+      final api = ref.read(apiClientProvider);
+      final results = await Future.wait([
+        api.listGastos(),
+        api.listIngresos(),
+        api.listPacientes(page: 1, pageSize: 1000),
+      ]);
 
-      final combined = [...gastos, ...ingresos];
-      // Sort by date descending
-      combined.sort((a, b) {
-        final dateA = a is Gasto ? a.fecha : (a as Sesion).fecha;
-        final dateB = b is Gasto ? b.fecha : (b as Sesion).fecha;
-        return dateB.compareTo(dateA);
-      });
+      final gastos = results[0] as List<Gasto>;
+      final ingresos = results[1] as List<Sesion>;
+      final paginatedPacientes = results[2] as PaginatedPacientes;
 
-      setState(() {
-        _transactions = combined;
-      });
+      final patientMap = <int, String>{};
+      for (final p in paginatedPacientes.items) {
+        final fullName = '${p.nombre} ${p.apellido}'.trim();
+        if (fullName.isNotEmpty) {
+          patientMap[p.id.toInt()] = fullName;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _gastos = gastos;
+          _ingresos = ingresos;
+          _patientNames = patientMap;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -54,10 +98,46 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     }
   }
 
-  void _showAddExpenseDialog([Gasto? gasto]) {
-    showDialog(
+  String _resolvePatientName(Sesion sesion) {
+    final fromJoin = sesion.pacienteNombre?.trim();
+    if (fromJoin != null && fromJoin.isNotEmpty) {
+      return fromJoin;
+    }
+    final fromMap = _patientNames[sesion.pacienteId.toInt()];
+    if (fromMap != null && fromMap.isNotEmpty) {
+      return fromMap;
+    }
+    return 'Paciente #${sesion.pacienteId}';
+  }
+
+  bool _isInSelectedMonth(String dateStr) {
+    try {
+      final parsed = DateTime.parse(dateStr);
+      return parsed.year == _selectedMonth.year &&
+          parsed.month == _selectedMonth.month;
+    } catch (_) {
+      final prefix =
+          '${_selectedMonth.year.toString().padLeft(4, '0')}-${_selectedMonth.month.toString().padLeft(2, '0')}';
+      return dateStr.trim().startsWith(prefix);
+    }
+  }
+
+  void _changeMonth(int deltaMonths) {
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + deltaMonths,
+      );
+    });
+  }
+
+  void _showAddExpenseDialog({Gasto? gasto, String? initialCategory}) {
+    showDialog<bool>(
       context: context,
-      builder: (context) => AddExpenseDialog(gastoToEdit: gasto),
+      builder: (context) => AddExpenseDialog(
+        gastoToEdit: gasto,
+        initialCategory: initialCategory,
+      ),
     ).then((result) {
       if (result == true) {
         _loadData();
@@ -65,130 +145,644 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     });
   }
 
+  void _showMonthlyClosingDialog({
+    required List<Sesion> monthIngresos,
+    required List<Gasto> monthOperationalExpenses,
+    required List<Gasto> monthPersonalExpenses,
+    required double totalIncome,
+    required double subtotalOperationalExpenses,
+    required double totalPersonalExpenses,
+    required double totalExpenses,
+    required double netBalance,
+  }) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => MonthlyClosingDialog(
+        year: _selectedMonth.year,
+        month: _selectedMonth.month,
+        ingresosCount: monthIngresos.length,
+        operationalExpensesCount: monthOperationalExpenses.length,
+        personalExpensesCount: monthPersonalExpenses.length,
+        totalIncome: totalIncome,
+        subtotalOperationalExpenses: subtotalOperationalExpenses,
+        totalPersonalExpenses: totalPersonalExpenses,
+        totalExpenses: totalExpenses,
+        netBalance: netBalance,
+      ),
+    );
+  }
+
+  Future<void> _deleteGastoItem(Gasto item) async {
+    try {
+      final api = ref.read(apiClientProvider);
+      await api.deleteGasto(id: item.id);
+      await _loadData();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar gasto: $e')),
+        );
+      }
+    }
+  }
+
+  void _showItemActions(dynamic item) {
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Modificar'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                if (item is Gasto) {
+                  _showAddExpenseDialog(gasto: item);
+                } else if (item is Sesion) {
+                  context.go('/sessions/edit/${item.pacienteId}', extra: item);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text(
+                'Eliminar',
+                style: TextStyle(color: Colors.red),
+              ),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                if (item is Gasto) {
+                  await _deleteGastoItem(item);
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Las sesiones deben eliminarse o anularse desde la ficha del paciente o Sesiones',
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthSelectorBar({
+    required List<Sesion> monthIngresos,
+    required List<Gasto> monthOperationalExpenses,
+    required List<Gasto> monthPersonalExpenses,
+    required double totalIncome,
+    required double subtotalOperationalExpenses,
+    required double totalPersonalExpenses,
+    required double totalExpenses,
+    required double netBalance,
+  }) {
+    final theme = Theme.of(context);
+    final monthTitle =
+        '${spanishMonthName(_selectedMonth.month)} ${_selectedMonth.year}';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Mes anterior',
+                onPressed: () => _changeMonth(-1),
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_month,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      monthTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Mes siguiente',
+                onPressed: () => _changeMonth(1),
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                key: const Key('btn_add_personal_expense'),
+                onPressed: () => _showAddExpenseDialog(
+                  initialCategory: 'Gastos Personales',
+                ),
+                icon: const Icon(Icons.person_outline, size: 18),
+                label: const Text('Anexar Gasto Personal'),
+              ),
+              FilledButton.icon(
+                key: const Key('btn_cierre_contable_pdf'),
+                onPressed: () => _showMonthlyClosingDialog(
+                  monthIngresos: monthIngresos,
+                  monthOperationalExpenses: monthOperationalExpenses,
+                  monthPersonalExpenses: monthPersonalExpenses,
+                  totalIncome: totalIncome,
+                  subtotalOperationalExpenses: subtotalOperationalExpenses,
+                  totalPersonalExpenses: totalPersonalExpenses,
+                  totalExpenses: totalExpenses,
+                  netBalance: netBalance,
+                ),
+                icon: const Icon(Icons.picture_as_pdf, size: 18),
+                label: const Text('Cierre Contable PDF'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNumericTab() {
-    if (_transactions.isEmpty) return const Center(child: Text('No hay registros.'));
+    final monthIngresos = _ingresos
+        .where((s) => _isInSelectedMonth(s.fecha))
+        .toList();
+    final monthGastos = _gastos
+        .where((g) => _isInSelectedMonth(g.fecha))
+        .toList();
+
+    final monthPersonalExpenses = monthGastos
+        .where((g) => isPersonalExpenseCategory(g.categoria))
+        .toList();
+    final monthOperationalExpenses = monthGastos
+        .where((g) => !isPersonalExpenseCategory(g.categoria))
+        .toList();
 
     double currentMonthIncome = 0;
-    double currentMonthExpenses = 0;
-    
-    final now = DateTime.now();
-    for (final item in _transactions) {
-      final dateStr = item is Gasto ? item.fecha : (item as Sesion).fecha;
-      try {
-        final date = DateTime.parse(dateStr);
-        if (date.year == now.year && date.month == now.month) {
-          if (item is Gasto) {
-            currentMonthExpenses += item.monto;
-          } else {
-            currentMonthIncome += ((item as Sesion).precioCobrado ?? 0.0);
-          }
-        }
-      } catch (_) {}
+    for (final s in monthIngresos) {
+      currentMonthIncome += (s.precioCobrado ?? 0.0);
     }
-    final balance = currentMonthIncome - currentMonthExpenses;
+
+    double subtotalOperationalExpenses = 0;
+    for (final g in monthOperationalExpenses) {
+      subtotalOperationalExpenses += g.monto;
+    }
+
+    double totalPersonalExpenses = 0;
+    for (final g in monthPersonalExpenses) {
+      totalPersonalExpenses += g.monto;
+    }
+
+    final totalExpenses = subtotalOperationalExpenses + totalPersonalExpenses;
+    final balance = currentMonthIncome - totalExpenses;
+
+    // Combined operational + income transactions for the main list
+    final List<dynamic> mainTransactions = [
+      ...monthIngresos,
+      ...monthOperationalExpenses,
+    ];
+    mainTransactions.sort((a, b) {
+      final dateA = a is Gasto ? a.fecha : (a as Sesion).fecha;
+      final dateB = b is Gasto ? b.fecha : (b as Sesion).fecha;
+      return dateB.compareTo(dateA);
+    });
+
+    final theme = Theme.of(context);
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildSummaryCard('Ingresos', currentMonthIncome, Colors.green),
-              _buildSummaryCard('Gastos', currentMonthExpenses, Colors.red),
-              _buildSummaryCard('Saldo', balance, balance >= 0 ? Colors.blue : Colors.orange),
-            ],
-          ),
+        _buildMonthSelectorBar(
+          monthIngresos: monthIngresos,
+          monthOperationalExpenses: monthOperationalExpenses,
+          monthPersonalExpenses: monthPersonalExpenses,
+          totalIncome: currentMonthIncome,
+          subtotalOperationalExpenses: subtotalOperationalExpenses,
+          totalPersonalExpenses: totalPersonalExpenses,
+          totalExpenses: totalExpenses,
+          netBalance: balance,
         ),
-        const Divider(),
+        const Divider(height: 1),
         Expanded(
-          child: ListView.builder(
-            itemCount: _transactions.length,
-            itemBuilder: (context, index) {
-              final item = _transactions[index];
-              final isExpense = item is Gasto;
-              
-              final title = isExpense ? item.nombre : 'Sesión (ID: ${(item as Sesion).id})';
-              final date = isExpense ? item.fecha : (item as Sesion).fecha;
-              final amount = isExpense ? item.monto : ((item as Sesion).precioCobrado ?? 0.0);
-              final description = isExpense ? (item.descripcion ?? '') : (item.observaciones ?? '');
-              
-              // Parse date for better formatting if needed, assuming ISO format
-              String formattedDate = date;
-              try {
-                final parsed = DateTime.parse(date);
-                formattedDate = DateFormat('yyyy-MM-dd HH:mm').format(parsed);
-              } catch (_) {}
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildSummaryCard(
+                    'Ingresos',
+                    currentMonthIncome,
+                    Colors.green.shade700,
+                  ),
+                  _buildSummaryCard(
+                    'Gastos Operativos',
+                    subtotalOperationalExpenses,
+                    Colors.red.shade600,
+                  ),
+                  _buildSummaryCard(
+                    'Gastos Personales',
+                    totalPersonalExpenses,
+                    Colors.deepOrange.shade700,
+                  ),
+                  _buildSummaryCard(
+                    'Total Gastos',
+                    totalExpenses,
+                    Colors.red.shade900,
+                  ),
+                  _buildSummaryCard(
+                    'Saldo',
+                    balance,
+                    balance >= 0 ? Colors.blue.shade700 : Colors.orange.shade800,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // 1. Movimientos de Ingresos y Gastos Operativos
+              Text(
+                'Movimientos Contables del Mes (Sesiones e Insumos)',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (mainTransactions.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      'No hay sesiones cobradas ni gastos operativos en este mes.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Card(
+                  child: Column(
+                    children: mainTransactions.map((item) {
+                      final isExpense = item is Gasto;
+                      final String title = isExpense
+                          ? item.nombre
+                          : _resolvePatientName(item as Sesion);
+                      final String date = isExpense
+                          ? item.fecha
+                          : (item as Sesion).fecha;
+                      final double amount = isExpense
+                          ? item.monto
+                          : ((item as Sesion).precioCobrado ?? 0.0);
+                      final String description = isExpense
+                          ? (item.descripcion ?? '')
+                          : ((item as Sesion).notasSesion ??
+                                item.observaciones ??
+                                '');
+                      final String badgeText = isExpense
+                          ? (item.categoria ?? 'Operativo')
+                          : ((item as Sesion).tipo == 'corporal'
+                                ? 'Sesión Corporal'
+                                : 'Sesión Facial');
 
-              return ListTile(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) => SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.edit),
-                            title: const Text('Modificar'),
-                            onTap: () {
-                              Navigator.pop(context);
-                              if (item is Gasto) {
-                                _showAddExpenseDialog(item);
-                              } else if (item is Sesion) {
-                                context.go('/sessions/edit/${item.pacienteId}', extra: item);
-                              }
-                            },
+                      String formattedDate = date;
+                      try {
+                        final parsed = DateTime.parse(date);
+                        formattedDate = DateFormat('yyyy-MM-dd').format(parsed);
+                      } catch (_) {}
+
+                      return ListTile(
+                        onTap: () => _showItemActions(item),
+                        leading: CircleAvatar(
+                          backgroundColor: isExpense
+                              ? Colors.red.shade100
+                              : Colors.green.shade100,
+                          child: Icon(
+                            isExpense ? Icons.remove : Icons.person,
+                            color: isExpense
+                                ? Colors.red.shade700
+                                : Colors.green.shade700,
                           ),
-                          ListTile(
-                            leading: const Icon(Icons.delete, color: Colors.red),
-                            title: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-                            onTap: () async {
-                              Navigator.pop(context);
-                              if (item is Gasto) {
-                                try {
-                                  await deleteGasto(id: item.id);
-                                  _loadData();
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error al eliminar gasto: $e')),
-                                    );
-                                  }
-                                }
-                              } else {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Las sesiones deben eliminarse o anularse desde la pestaña de Sesiones')),
-                                  );
-                                }
-                              }
-                            },
+                        ),
+                        title: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isExpense
+                                    ? Colors.red.withValues(alpha: 0.1)
+                                    : Colors.green.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                badgeText,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isExpense
+                                      ? Colors.red.shade800
+                                      : Colors.green.shade800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        subtitle: Text(
+                          '$formattedDate${description.isNotEmpty ? " - $description" : ""}',
+                        ),
+                        trailing: Text(
+                          '${isExpense ? "-" : "+"}\$${amount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: isExpense
+                                ? Colors.red.shade700
+                                : Colors.green.shade700,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
+              // 2. Renglón de Gastos Personales (totalizados para incorporarse a la contabilidad)
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: Colors.deepOrange.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.account_balance_wallet_outlined,
+                                      color: Colors.deepOrange.shade700,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        'Renglón de Gastos Personales',
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Gastos personales del período que se totalizan al final para ser incorporados a la contabilidad general.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _showAddExpenseDialog(
+                              initialCategory: 'Gastos Personales',
+                            ),
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('Agregar'),
                           ),
                         ],
                       ),
-                    ),
-                  );
-                },
-                leading: CircleAvatar(
-                  backgroundColor: isExpense ? Colors.red.shade100 : Colors.green.shade100,
-                  child: Icon(
-                    isExpense ? Icons.remove : Icons.add,
-                    color: isExpense ? Colors.red : Colors.green,
+                      const Divider(height: 20),
+                      if (monthPersonalExpenses.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text(
+                            'Sin gastos personales registrados en este mes (\$0.00).',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      else
+                        ...monthPersonalExpenses.map((gasto) {
+                          String formattedDate = gasto.fecha;
+                          try {
+                            final parsed = DateTime.parse(gasto.fecha);
+                            formattedDate = DateFormat(
+                              'yyyy-MM-dd',
+                            ).format(parsed);
+                          } catch (_) {}
+                          final desc = gasto.descripcion ?? '';
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            onTap: () => _showItemActions(gasto),
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.deepOrange.shade100,
+                              child: Icon(
+                                Icons.person_remove_outlined,
+                                color: Colors.deepOrange.shade800,
+                              ),
+                            ),
+                            title: Text(
+                              gasto.nombre,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '$formattedDate${desc.isNotEmpty ? " - $desc" : ""}',
+                            ),
+                            trailing: Text(
+                              '-\$${gasto.monto.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: Colors.deepOrange.shade800,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          );
+                        }),
+                      const Divider(height: 20),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.deepOrange.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Flexible(
+                              child: Text(
+                                'Total Renglón Gastos Personales (Incorporado a Contabilidad):',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Text(
+                              '\$${totalPersonalExpenses.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: Colors.deepOrange.shade800,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                title: Text(title),
-                subtitle: Text('$formattedDate ${description.isNotEmpty ? "- $description" : ""}'),
-                trailing: Text(
-                  '\$${amount.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: isExpense ? Colors.red : Colors.green,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+              ),
+
+              const SizedBox(height: 20),
+
+              // 3. Cuadre Final de Contabilidad (Totalización)
+              Card(
+                color: theme.colorScheme.surfaceContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Totalización e Incorporación Contable del Mes',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildClosingRow(
+                        '(+) Total Ingresos por Sesiones:',
+                        '\$${currentMonthIncome.toStringAsFixed(2)}',
+                        Colors.green.shade700,
+                      ),
+                      const SizedBox(height: 6),
+                      _buildClosingRow(
+                        '(-) Subtotal Gastos Operativos:',
+                        '\$${subtotalOperationalExpenses.toStringAsFixed(2)}',
+                        Colors.red.shade600,
+                      ),
+                      const SizedBox(height: 6),
+                      _buildClosingRow(
+                        '(-) Renglón Gastos Personales (Totalizados):',
+                        '\$${totalPersonalExpenses.toStringAsFixed(2)}',
+                        Colors.deepOrange.shade700,
+                        isBold: true,
+                      ),
+                      const Divider(height: 18),
+                      _buildClosingRow(
+                        '(=) Total General de Gastos Incorporados:',
+                        '\$${totalExpenses.toStringAsFixed(2)}',
+                        Colors.red.shade900,
+                        isBold: true,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildClosingRow(
+                        '(=) SALDO NETO CONTABLE DEL MES:',
+                        '\$${balance.toStringAsFixed(2)}',
+                        balance >= 0
+                            ? Colors.blue.shade700
+                            : Colors.orange.shade800,
+                        isBold: true,
+                        fontSize: 16,
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 64),
+            ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildClosingRow(
+    String label,
+    String value,
+    Color valueColor, {
+    bool isBold = false,
+    double fontSize = 14,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              fontSize: fontSize,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+            fontSize: fontSize,
           ),
         ),
       ],
@@ -197,16 +791,21 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
 
   Widget _buildSummaryCard(String title, double amount, Color color) {
     return Card(
-      elevation: 2,
+      elevation: 1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 18.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               '\$${amount.toStringAsFixed(2)}',
-              style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: color,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -215,29 +814,35 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   }
 
   Widget _buildVisualTab() {
-    if (_transactions.isEmpty) return const Center(child: Text('No hay registros.'));
-
     final Map<int, double> incomesByDay = {};
     final Map<int, double> expensesByDay = {};
 
-    final now = DateTime.now();
-    for (final item in _transactions) {
-      final dateStr = item is Gasto ? item.fecha : (item as Sesion).fecha;
-      try {
-        final date = DateTime.parse(dateStr);
-        if (date.year == now.year && date.month == now.month) {
+    for (final s in _ingresos) {
+      if (_isInSelectedMonth(s.fecha)) {
+        try {
+          final date = DateTime.parse(s.fecha);
           final day = date.day;
-          if (item is Gasto) {
-            expensesByDay[day] = (expensesByDay[day] ?? 0) + item.monto;
-          } else {
-            final inc = (item as Sesion).precioCobrado ?? 0.0;
-            incomesByDay[day] = (incomesByDay[day] ?? 0) + inc;
-          }
-        }
-      } catch (_) {}
+          final inc = s.precioCobrado ?? 0.0;
+          incomesByDay[day] = (incomesByDay[day] ?? 0) + inc;
+        } catch (_) {}
+      }
     }
 
-    final int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    for (final g in _gastos) {
+      if (_isInSelectedMonth(g.fecha)) {
+        try {
+          final date = DateTime.parse(g.fecha);
+          final day = date.day;
+          expensesByDay[day] = (expensesByDay[day] ?? 0) + g.monto;
+        } catch (_) {}
+      }
+    }
+
+    final int daysInMonth = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month + 1,
+      0,
+    ).day;
     final List<FlSpot> incomeSpots = [];
     final List<FlSpot> expenseSpots = [];
 
@@ -248,23 +853,31 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
       final exp = expensesByDay[i] ?? 0.0;
       incomeSpots.add(FlSpot(i.toDouble(), inc));
       expenseSpots.add(FlSpot(i.toDouble(), exp));
-      
+
       if (inc > maxY) maxY = inc;
       if (exp > maxY) maxY = exp;
     }
 
-    // Add some padding to maxY
     maxY = maxY > 0 ? maxY * 1.2 : 100;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 32.0, left: 16.0, top: 40.0, bottom: 16.0),
+      padding: const EdgeInsets.only(
+        right: 32.0,
+        left: 16.0,
+        top: 40.0,
+        bottom: 16.0,
+      ),
       child: LineChart(
         LineChartData(
-          gridData: FlGridData(show: true, drawVerticalLine: true),
+          gridData: const FlGridData(show: true, drawVerticalLine: true),
           titlesData: FlTitlesData(
             show: true,
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -275,7 +888,10 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       'Día ${value.toInt()}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   );
                 },
@@ -286,7 +902,10 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                 showTitles: true,
                 reservedSize: 60,
                 getTitlesWidget: (value, meta) {
-                  return Text('\$${value.toInt()}', style: const TextStyle(fontSize: 12));
+                  return Text(
+                    '\$${value.toInt()}',
+                    style: const TextStyle(fontSize: 12),
+                  );
                 },
               ),
             ),
@@ -357,6 +976,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
+              tooltip: 'Actualizar datos',
               onPressed: _loadData,
             ),
           ],
@@ -376,7 +996,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                 ],
               ),
         floatingActionButton: FloatingActionButton(
-          onPressed: _showAddExpenseDialog,
+          onPressed: () => _showAddExpenseDialog(),
           tooltip: 'Agregar Gasto',
           child: const Icon(Icons.add),
         ),
@@ -385,27 +1005,246 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   }
 }
 
-class AddExpenseDialog extends StatefulWidget {
-  final Gasto? gastoToEdit;
-  const AddExpenseDialog({super.key, this.gastoToEdit});
+class MonthlyClosingDialog extends ConsumerStatefulWidget {
+  final int year;
+  final int month;
+  final int ingresosCount;
+  final int operationalExpensesCount;
+  final int personalExpensesCount;
+  final double totalIncome;
+  final double subtotalOperationalExpenses;
+  final double totalPersonalExpenses;
+  final double totalExpenses;
+  final double netBalance;
+
+  const MonthlyClosingDialog({
+    super.key,
+    required this.year,
+    required this.month,
+    required this.ingresosCount,
+    required this.operationalExpensesCount,
+    required this.personalExpensesCount,
+    required this.totalIncome,
+    required this.subtotalOperationalExpenses,
+    required this.totalPersonalExpenses,
+    required this.totalExpenses,
+    required this.netBalance,
+  });
 
   @override
-  State<AddExpenseDialog> createState() => _AddExpenseDialogState();
+  ConsumerState<MonthlyClosingDialog> createState() =>
+      _MonthlyClosingDialogState();
 }
 
-class _AddExpenseDialogState extends State<AddExpenseDialog> {
+class _MonthlyClosingDialogState extends ConsumerState<MonthlyClosingDialog> {
+  bool _isGeneratingPdf = false;
+
+  Future<void> _exportClosingPdf() async {
+    setState(() => _isGeneratingPdf = true);
+    try {
+      final api = ref.read(apiClientProvider);
+      final pdfBytes = await api.generateAccountingReportBytes(
+        year: widget.year,
+        month: widget.month,
+      );
+
+      final defaultFileName =
+          'cierre_contable_${widget.year}_${widget.month.toString().padLeft(2, '0')}.pdf';
+
+      final outputFileUri = await FilePicker.saveFile(
+        bytes: pdfBytes,
+        dialogTitle: 'Guardar Cierre Contable en PDF',
+        fileName: defaultFileName,
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (outputFileUri != null) {
+        if (!kIsWeb) {
+          final outputPath = outputFileUri.toFilePath();
+          final file = File(outputPath);
+          if (!await file.exists() || await file.length() == 0) {
+            await apiGenerateAccountingReport(
+              year: widget.year,
+              month: widget.month,
+              outputPath: outputPath,
+            );
+          }
+          if (mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Cierre contable guardado en PDF: $outputPath'),
+              ),
+            );
+          }
+        } else if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cierre contable descargado en PDF correctamente.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al guardar PDF de cierre: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGeneratingPdf = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mesNombre = spanishMonthName(widget.month);
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(
+            Icons.picture_as_pdf,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text('Cierre Contable - $mesNombre ${widget.year}'),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Resumen de fin de mes con gastos personales totalizados e incorporados a la contabilidad:',
+            ),
+            const SizedBox(height: 16),
+            _summaryLine(
+              '(+) Ingresos (${widget.ingresosCount} sesiones):',
+              '\$${widget.totalIncome.toStringAsFixed(2)}',
+              Colors.green.shade700,
+            ),
+            const SizedBox(height: 8),
+            _summaryLine(
+              '(-) Gastos Operativos (${widget.operationalExpensesCount}):',
+              '\$${widget.subtotalOperationalExpenses.toStringAsFixed(2)}',
+              Colors.red.shade600,
+            ),
+            const SizedBox(height: 8),
+            _summaryLine(
+              '(-) Renglón Gastos Personales (${widget.personalExpensesCount}):',
+              '\$${widget.totalPersonalExpenses.toStringAsFixed(2)}',
+              Colors.deepOrange.shade700,
+              bold: true,
+            ),
+            const Divider(height: 24),
+            _summaryLine(
+              '(=) Total Gastos Incorporados:',
+              '\$${widget.totalExpenses.toStringAsFixed(2)}',
+              Colors.red.shade900,
+              bold: true,
+            ),
+            const SizedBox(height: 8),
+            _summaryLine(
+              '(=) SALDO NETO DEL CIERRE:',
+              '\$${widget.netBalance.toStringAsFixed(2)}',
+              widget.netBalance >= 0
+                  ? Colors.blue.shade700
+                  : Colors.orange.shade800,
+              bold: true,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isGeneratingPdf
+              ? null
+              : () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton.icon(
+          key: const Key('btn_save_cierre_pdf'),
+          onPressed: _isGeneratingPdf ? null : _exportClosingPdf,
+          icon: _isGeneratingPdf
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download),
+          label: Text(
+            _isGeneratingPdf ? 'Generando PDF...' : 'Guardar Cierre en PDF',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryLine(
+    String label,
+    String amount,
+    Color color, {
+    bool bold = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          amount,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AddExpenseDialog extends ConsumerStatefulWidget {
+  final Gasto? gastoToEdit;
+  final String? initialCategory;
+
+  const AddExpenseDialog({
+    super.key,
+    this.gastoToEdit,
+    this.initialCategory,
+  });
+
+  @override
+  ConsumerState<AddExpenseDialog> createState() => _AddExpenseDialogState();
+}
+
+class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _montoController = TextEditingController();
-  
+
   String _selectedCategory = 'Otro';
-  final List<String> _categories = [
+  final List<String> _categories = const [
     'Producto',
     'Máquina',
     'Mantenimiento',
     'Impuesto',
-    'Otro'
+    'Gastos Personales',
+    'Otro',
   ];
 
   DateTime _selectedDate = DateTime.now();
@@ -419,8 +1258,18 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
       _nombreController.text = g.nombre;
       _descripcionController.text = g.descripcion ?? '';
       _montoController.text = g.monto.toString();
-      _selectedCategory = g.categoria ?? 'Otro';
+      final cat = g.categoria ?? 'Otro';
+      if (isPersonalExpenseCategory(cat)) {
+        _selectedCategory = 'Gastos Personales';
+      } else if (_categories.contains(cat)) {
+        _selectedCategory = cat;
+      } else {
+        _selectedCategory = 'Otro';
+      }
       _selectedDate = DateTime.tryParse(g.fecha) ?? DateTime.now();
+    } else if (widget.initialCategory != null &&
+        _categories.contains(widget.initialCategory)) {
+      _selectedCategory = widget.initialCategory!;
     }
   }
 
@@ -442,30 +1291,35 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
-    
+
     try {
-      final monto = double.parse(_montoController.text);
+      final api = ref.read(apiClientProvider);
+      final monto = double.parse(_montoController.text.replaceAll(',', '.'));
       if (widget.gastoToEdit == null) {
         final gasto = NuevoGasto(
-          nombre: _nombreController.text,
-          descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
+          nombre: _nombreController.text.trim(),
+          descripcion: _descripcionController.text.trim().isNotEmpty
+              ? _descripcionController.text.trim()
+              : null,
           categoria: _selectedCategory,
           monto: monto,
           fecha: _selectedDate.toIso8601String(),
         );
-        await createGasto(gasto: gasto);
+        await api.createGasto(gasto: gasto);
       } else {
         final gasto = Gasto(
           id: widget.gastoToEdit!.id,
-          nombre: _nombreController.text,
-          descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
+          nombre: _nombreController.text.trim(),
+          descripcion: _descripcionController.text.trim().isNotEmpty
+              ? _descripcionController.text.trim()
+              : null,
           categoria: _selectedCategory,
           monto: monto,
           fecha: _selectedDate.toIso8601String(),
         );
-        await updateGasto(gasto: gasto);
+        await api.updateGasto(gasto: gasto);
       }
-      
+
       if (mounted) {
         Navigator.of(context).pop(true);
       }
@@ -489,8 +1343,13 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isPersonal = _selectedCategory == 'Gastos Personales';
     return AlertDialog(
-      title: Text(widget.gastoToEdit == null ? 'Nuevo Gasto' : 'Modificar Gasto'),
+      title: Text(
+        widget.gastoToEdit == null
+            ? (isPersonal ? 'Nuevo Gasto Personal' : 'Nuevo Gasto')
+            : 'Modificar Gasto',
+      ),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -499,8 +1358,9 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
             children: [
               TextFormField(
                 controller: _nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                decoration: const InputDecoration(labelText: 'Concepto / Nombre'),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -510,7 +1370,9 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedCategory,
-                decoration: const InputDecoration(labelText: 'Categoría'),
+                decoration: const InputDecoration(
+                  labelText: 'Categoría / Renglón',
+                ),
                 items: _categories.map((c) {
                   return DropdownMenuItem(value: c, child: Text(c));
                 }).toList(),
@@ -523,11 +1385,15 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _montoController,
-                decoration: const InputDecoration(labelText: 'Monto'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Monto (\$)'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Requerido';
-                  if (double.tryParse(v) == null) return 'Monto inválido';
+                  if (v == null || v.trim().isEmpty) return 'Requerido';
+                  if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                    return 'Monto inválido';
+                  }
                   return null;
                 },
               ),
@@ -556,9 +1422,13 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
         ),
         ElevatedButton(
           onPressed: _isSaving ? null : _saveExpense,
-          child: _isSaving 
-            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-            : const Text('Guardar'),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Guardar'),
         ),
       ],
     );

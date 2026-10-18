@@ -17,9 +17,18 @@ Future<void> main() async {
     await SystemTheme.accentColor.load();
     await RustLib.init();
     
-    // Initialize Database
-    final home = Platform.environment['HOME'] ?? '';
-    final dbDir = Directory('$home/.local/share/datacare');
+    // Initialize Database (preserve legacy Windows path if it already exists)
+    final legacyDir = Directory('/.local/share/datacare');
+    final legacyDbFile = File('${legacyDir.path}/datacare.db');
+    final Directory dbDir;
+    if (Platform.isWindows && await legacyDbFile.exists()) {
+      dbDir = legacyDir;
+    } else {
+      final home = Platform.environment['HOME'] ??
+          Platform.environment['USERPROFILE'] ??
+          '';
+      dbDir = Directory('$home/.local/share/datacare');
+    }
     if (!await dbDir.exists()) {
       await dbDir.create(recursive: true);
     }

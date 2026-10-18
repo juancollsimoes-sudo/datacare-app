@@ -120,6 +120,7 @@ pub struct Sesion {
     pub medida_brazos: Option<String>,
     pub medida_pecho: Option<String>,
     pub medida_piernas: Option<String>,
+    pub paciente_nombre: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

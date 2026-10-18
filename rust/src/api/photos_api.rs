@@ -6,9 +6,7 @@ use std::path::Path;
 
 // Initialize PhotoManager with a base path (e.g. in the app data directory)
 fn get_photo_manager() -> Result<PhotoManager, String> {
-    // Determine a safe base dir. For a desktop app, ~/.local/share/datacare is good.
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    let base_dir = std::path::PathBuf::from(home).join(".local").join("share").join("datacare");
+    let base_dir = DatabaseManager::get_base_dir();
     Ok(PhotoManager::new(base_dir))
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import '../../rust/db/models.dart';
 import '../../rust/api/db_api.dart' as db_api;
+import '../../rust/api/pdf_api.dart' as pdf_api;
 import '../../rust/api/photos_api.dart' as photos_api;
 import 'api_client.dart';
 
@@ -80,6 +81,48 @@ class DesktopApiClient implements ApiClient {
     return db_api.getSesionesCorporales(pacienteId: pacienteId);
   }
 
+  // Contaduría
+  @override
+  Future<List<Gasto>> listGastos() {
+    return db_api.listGastos();
+  }
+
+  @override
+  Future<PlatformInt64> createGasto({required NuevoGasto gasto}) {
+    return db_api.createGasto(gasto: gasto);
+  }
+
+  @override
+  Future<void> updateGasto({required Gasto gasto}) {
+    return db_api.updateGasto(gasto: gasto);
+  }
+
+  @override
+  Future<void> deleteGasto({required PlatformInt64 id}) {
+    return db_api.deleteGasto(id: id);
+  }
+
+  @override
+  Future<List<Sesion>> listIngresos() {
+    return db_api.listIngresos();
+  }
+
+  // Reportes PDF
+  @override
+  Future<Uint8List> generateAccountingReportBytes({
+    required int year,
+    required int month,
+  }) {
+    return pdf_api.apiGenerateAccountingReportBytes(year: year, month: month);
+  }
+
+  @override
+  Future<Uint8List> generatePatientReportBytes({
+    required PlatformInt64 pacienteId,
+  }) {
+    return pdf_api.apiGeneratePatientReportBytes(pacienteId: pacienteId);
+  }
+
   // Dashboard
   @override
   Future<DashboardStats> getDashboardStats() {
@@ -119,3 +162,4 @@ class DesktopApiClient implements ApiClient {
     return photos_api.listPhotosByPatient(pacienteId: pacienteId);
   }
 }
+

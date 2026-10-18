@@ -32,6 +32,22 @@ abstract class ApiClient {
   Future<void> updateSesion({required ActualizarSesion sesion});
   Future<List<Sesion>> getSesionesCorporales({required PlatformInt64 pacienteId});
 
+  // Contaduría
+  Future<List<Gasto>> listGastos();
+  Future<PlatformInt64> createGasto({required NuevoGasto gasto});
+  Future<void> updateGasto({required Gasto gasto});
+  Future<void> deleteGasto({required PlatformInt64 id});
+  Future<List<Sesion>> listIngresos();
+
+  // Reportes PDF
+  Future<Uint8List> generateAccountingReportBytes({
+    required int year,
+    required int month,
+  });
+  Future<Uint8List> generatePatientReportBytes({
+    required PlatformInt64 pacienteId,
+  });
+
   // Dashboard
   Future<DashboardStats> getDashboardStats();
 
@@ -47,3 +63,4 @@ abstract class ApiClient {
   Future<List<FotoSesion>> listPhotosBySession({required PlatformInt64 sesionId});
   Future<List<FotoSesion>> listPhotosByPatient({required PlatformInt64 pacienteId});
 }
+

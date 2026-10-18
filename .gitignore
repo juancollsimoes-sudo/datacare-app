@@ -57,3 +57,5 @@ rust/Cargo.lock
 # AI Documentation
 AI_GUIDE.md
 design_recommendations.md
+sqlite_mcp_server.db
+

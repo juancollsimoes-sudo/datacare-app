@@ -5,8 +5,7 @@ use zip::{ZipArchive, ZipWriter};
 use zip::write::SimpleFileOptions;
 
 fn get_base_dir() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home).join(".local").join("share").join("datacare")
+    crate::db::DatabaseManager::get_base_dir()
 }
 
 pub fn create_backup(output_path: &str) -> Result<(), anyhow::Error> {

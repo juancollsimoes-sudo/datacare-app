@@ -5,14 +5,20 @@ pub mod repository;
 
 use crate::db::error::AppError;
 use rusqlite::Connection;
+use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
 pub static DB_CONN: OnceLock<Mutex<Connection>> = OnceLock::new();
+pub static BASE_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 pub struct DatabaseManager;
 
 impl DatabaseManager {
     pub fn init(db_path: &str) -> Result<(), AppError> {
+        if let Some(parent) = Path::new(db_path).parent() {
+            let _ = BASE_DIR.set(parent.to_path_buf());
+        }
+
         if let Some(mutex) = DB_CONN.get() {
             let mut conn = mutex.lock().map_err(|_| AppError::IoError("Failed to lock database".into()))?;
             migrations::apply_migrations(&mut conn)?;
@@ -28,6 +34,16 @@ impl DatabaseManager {
         let _ = DB_CONN.set(Mutex::new(conn));
         
         Ok(())
+    }
+
+    pub fn get_base_dir() -> PathBuf {
+        if let Some(dir) = BASE_DIR.get() {
+            return dir.clone();
+        }
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_else(|_| ".".to_string());
+        PathBuf::from(home).join(".local").join("share").join("datacare")
     }
 
     pub fn get_conn() -> Result<std::sync::MutexGuard<'static, Connection>, AppError> {

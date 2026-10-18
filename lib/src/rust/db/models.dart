@@ -753,6 +753,7 @@ class Sesion {
   final String? medidaBrazos;
   final String? medidaPecho;
   final String? medidaPiernas;
+  final String? pacienteNombre;
 
   const Sesion({
     required this.id,
@@ -776,6 +777,7 @@ class Sesion {
     this.medidaBrazos,
     this.medidaPecho,
     this.medidaPiernas,
+    this.pacienteNombre,
   });
 
   @override
@@ -800,7 +802,8 @@ class Sesion {
       medidaCintura.hashCode ^
       medidaBrazos.hashCode ^
       medidaPecho.hashCode ^
-      medidaPiernas.hashCode;
+      medidaPiernas.hashCode ^
+      pacienteNombre.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -827,7 +830,8 @@ class Sesion {
           medidaCintura == other.medidaCintura &&
           medidaBrazos == other.medidaBrazos &&
           medidaPecho == other.medidaPecho &&
-          medidaPiernas == other.medidaPiernas;
+          medidaPiernas == other.medidaPiernas &&
+          pacienteNombre == other.pacienteNombre;
 }
 
 class Tratamiento {

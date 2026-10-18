@@ -14,3 +14,27 @@ Future<String> apiGeneratePatientReport({
   pacienteId: pacienteId,
   outputPath: outputPath,
 );
+
+Future<Uint8List> apiGeneratePatientReportBytes({
+  required PlatformInt64 pacienteId,
+}) => RustLib.instance.api.crateApiPdfApiApiGeneratePatientReportBytes(
+  pacienteId: pacienteId,
+);
+
+Future<String> apiGenerateAccountingReport({
+  required int year,
+  required int month,
+  required String outputPath,
+}) => RustLib.instance.api.crateApiPdfApiApiGenerateAccountingReport(
+  year: year,
+  month: month,
+  outputPath: outputPath,
+);
+
+Future<Uint8List> apiGenerateAccountingReportBytes({
+  required int year,
+  required int month,
+}) => RustLib.instance.api.crateApiPdfApiApiGenerateAccountingReportBytes(
+  year: year,
+  month: month,
+);

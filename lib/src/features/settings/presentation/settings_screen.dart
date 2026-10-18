@@ -1,12 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/theme_provider.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/services/auto_updater_service.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _isCheckingUpdates = false;
+
+  Future<void> _checkUpdatesManually() async {
+    setState(() => _isCheckingUpdates = true);
+    try {
+      await AutoUpdaterService.checkForUpdates(context, manualCheck: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingUpdates = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
@@ -77,8 +97,36 @@ class SettingsScreen extends ConsumerWidget {
             title: Text('Teléfono'),
             subtitle: Text('+1 234 567 8900'),
           ),
+          const Divider(height: 32),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Sistema y Actualizaciones',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.system_update_alt),
+            title: const Text('Versión actual'),
+            subtitle: const Text('${AppConstants.appName} ${AppConstants.appVersion}'),
+            trailing: FilledButton.tonalIcon(
+              onPressed: _isCheckingUpdates ? null : _checkUpdatesManually,
+              icon: _isCheckingUpdates
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh, size: 18),
+              label: Text(_isCheckingUpdates ? 'Buscando...' : 'Buscar actualizaciones'),
+            ),
+          ),
         ],
       ),
     );
   }
 }
+

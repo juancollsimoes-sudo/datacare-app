@@ -315,6 +315,109 @@ class WebApiClient implements ApiClient {
     }
   }
 
+  // Contaduría
+  @override
+  Future<List<Gasto>> listGastos() async {
+    final uri = Uri.parse('$baseUrl/gastos');
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return (json as List).map((item) => _parseGasto(item)).toList();
+    }
+    throw Exception('Failed to load gastos');
+  }
+
+  @override
+  Future<PlatformInt64> createGasto({required NuevoGasto gasto}) async {
+    final uri = Uri.parse('$baseUrl/gastos');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'nombre': gasto.nombre,
+        'descripcion': gasto.descripcion,
+        'categoria': gasto.categoria,
+        'monto': gasto.monto,
+        'fecha': gasto.fecha,
+      }),
+    );
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final idVal = json is Map ? json['id'] : json;
+      return _toPlatformInt64(idVal ?? 0);
+    }
+    throw Exception('Failed to create gasto');
+  }
+
+  @override
+  Future<void> updateGasto({required Gasto gasto}) async {
+    final uri = Uri.parse('$baseUrl/gastos/${gasto.id.toInt()}');
+    final response = await http.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id': gasto.id.toInt(),
+        'nombre': gasto.nombre,
+        'descripcion': gasto.descripcion,
+        'categoria': gasto.categoria,
+        'monto': gasto.monto,
+        'fecha': gasto.fecha,
+      }),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to update gasto');
+    }
+  }
+
+  @override
+  Future<void> deleteGasto({required PlatformInt64 id}) async {
+    final uri = Uri.parse('$baseUrl/gastos/${id.toInt()}');
+    final response = await http.delete(uri);
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete gasto');
+    }
+  }
+
+  @override
+  Future<List<Sesion>> listIngresos() async {
+    final uri = Uri.parse('$baseUrl/ingresos');
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return (json as List).map((item) => _parseSesion(item)).toList();
+    }
+    throw Exception('Failed to load ingresos');
+  }
+
+  // Reportes PDF
+  @override
+  Future<Uint8List> generateAccountingReportBytes({
+    required int year,
+    required int month,
+  }) async {
+    final uri = Uri.parse('$baseUrl/reportes/contabilidad').replace(queryParameters: {
+      'year': year.toString(),
+      'month': month.toString(),
+    });
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
+    throw Exception('Failed to generate accounting report PDF');
+  }
+
+  @override
+  Future<Uint8List> generatePatientReportBytes({
+    required PlatformInt64 pacienteId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/reportes/paciente/${pacienteId.toInt()}');
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
+    throw Exception('Failed to generate patient report PDF');
+  }
+
   // Dashboard
   @override
   Future<DashboardStats> getDashboardStats() async {
@@ -443,6 +546,18 @@ class WebApiClient implements ApiClient {
       medidaBrazos: json['medida_brazos'],
       medidaPecho: json['medida_pecho'],
       medidaPiernas: json['medida_piernas'],
+      pacienteNombre: json['paciente_nombre'],
+    );
+  }
+
+  Gasto _parseGasto(Map<String, dynamic> json) {
+    return Gasto(
+      id: _toPlatformInt64(json['id']),
+      nombre: json['nombre'],
+      descripcion: json['descripcion'],
+      categoria: json['categoria'],
+      monto: (json['monto'] as num).toDouble(),
+      fecha: json['fecha'],
     );
   }
 
@@ -466,3 +581,4 @@ class WebApiClient implements ApiClient {
     );
   }
 }
+

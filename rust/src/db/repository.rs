@@ -240,6 +240,7 @@ pub struct SesionRepo;
 
 fn row_to_sesion(row: &rusqlite::Row) -> Result<Sesion, rusqlite::Error> {
     let pagado_int: i32 = row.get(8)?;
+    let paciente_nombre: Option<String> = row.get(21).unwrap_or(None);
     Ok(Sesion {
         id: row.get(0)?,
         paciente_id: row.get(1)?,
@@ -262,13 +263,15 @@ fn row_to_sesion(row: &rusqlite::Row) -> Result<Sesion, rusqlite::Error> {
         medida_brazos: row.get(18)?,
         medida_pecho: row.get(19)?,
         medida_piernas: row.get(20)?,
+        paciente_nombre,
     })
 }
 
-const SESION_COLUMNS: &str = "id, paciente_id, tratamiento_id, fecha, notas_sesion, observaciones,
-        productos_usados, precio_cobrado, pagado, created_at,
-        tipo, peso, altura, imc, grasa_corporal, agua_corporal,
-        medida_cadera, medida_cintura, medida_brazos, medida_pecho, medida_piernas";
+const SESION_COLUMNS: &str = "s.id, s.paciente_id, s.tratamiento_id, s.fecha, s.notas_sesion, s.observaciones,
+        s.productos_usados, s.precio_cobrado, s.pagado, s.created_at,
+        s.tipo, s.peso, s.altura, s.imc, s.grasa_corporal, s.agua_corporal,
+        s.medida_cadera, s.medida_cintura, s.medida_brazos, s.medida_pecho, s.medida_piernas,
+        CASE WHEN p.id IS NOT NULL THEN TRIM(p.nombre || ' ' || p.apellido) ELSE NULL END AS paciente_nombre";
 
 impl SesionRepo {
     pub fn crear(conn: &Connection, s: &NuevaSesion) -> Result<i64, AppError> {
@@ -306,7 +309,7 @@ impl SesionRepo {
         )?;
 
         let query = format!(
-            "SELECT {} FROM sesiones WHERE paciente_id = ?1 ORDER BY fecha DESC, id DESC LIMIT ?2 OFFSET ?3",
+            "SELECT {} FROM sesiones s LEFT JOIN pacientes p ON s.paciente_id = p.id WHERE s.paciente_id = ?1 ORDER BY s.fecha DESC, s.id DESC LIMIT ?2 OFFSET ?3",
             SESION_COLUMNS
         );
         let mut stmt = conn.prepare(&query)?;
@@ -333,9 +336,9 @@ impl SesionRepo {
         paciente_id: i64,
     ) -> Result<Vec<Sesion>, AppError> {
         let query = format!(
-            "SELECT {} FROM sesiones 
-             WHERE paciente_id = ?1 AND (tipo = 'corporal' OR grasa_corporal IS NOT NULL OR peso IS NOT NULL OR imc IS NOT NULL) 
-             ORDER BY fecha ASC, id ASC",
+            "SELECT {} FROM sesiones s LEFT JOIN pacientes p ON s.paciente_id = p.id 
+             WHERE s.paciente_id = ?1 AND (s.tipo = 'corporal' OR s.grasa_corporal IS NOT NULL OR s.peso IS NOT NULL OR s.imc IS NOT NULL) 
+             ORDER BY s.fecha ASC, s.id ASC",
             SESION_COLUMNS
         );
         let mut stmt = conn.prepare(&query)?;
@@ -353,7 +356,7 @@ impl SesionRepo {
 
     pub fn list_ingresos(conn: &Connection) -> Result<Vec<Sesion>, AppError> {
         let query = format!(
-            "SELECT {} FROM sesiones WHERE precio_cobrado > 0 AND pagado = 1 ORDER BY fecha DESC",
+            "SELECT {} FROM sesiones s LEFT JOIN pacientes p ON s.paciente_id = p.id WHERE s.precio_cobrado > 0 AND s.pagado = 1 ORDER BY s.fecha DESC",
             SESION_COLUMNS
         );
         let mut stmt = conn.prepare(&query)?;
@@ -370,7 +373,7 @@ impl SesionRepo {
     }
 
     pub fn obtener(conn: &Connection, id: i64) -> Result<Option<Sesion>, AppError> {
-        let query = format!("SELECT {} FROM sesiones WHERE id = ?1", SESION_COLUMNS);
+        let query = format!("SELECT {} FROM sesiones s LEFT JOIN pacientes p ON s.paciente_id = p.id WHERE s.id = ?1", SESION_COLUMNS);
         let mut stmt = conn.prepare(&query)?;
         let s = stmt.query_row(params![id], |row| {
             row_to_sesion(row)
@@ -584,4 +587,70 @@ impl GastoRepo {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::migrations::apply_migrations;
+
+    #[test]
+    fn test_list_ingresos_includes_patient_name_even_when_deactivated() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        apply_migrations(&mut conn).unwrap();
+
+        let pid = PacienteRepo::crear(&conn, &NuevoPaciente {
+            nombre: "María".to_string(),
+            apellido: "González".to_string(),
+            fecha_nacimiento: None,
+            telefono: None,
+            email: None,
+            direccion: None,
+            notas_generales: None,
+            alergias: None,
+            condiciones_medicas: None,
+            afecciones_cutaneas: None,
+            tatuajes: None,
+            cirugia_plastica: None,
+            antecedentes_medicos: None,
+            ubicacion_lesiones: None,
+            tipo_piel: None,
+            cicatrizacion: None,
+            diagnostico_visual: None,
+            diagnostico_tactil: None,
+        }).unwrap();
+
+        let sid = SesionRepo::crear(&conn, &NuevaSesion {
+            paciente_id: pid,
+            tratamiento_id: None,
+            fecha: "2026-10-15T10:30:00".to_string(),
+            notas_sesion: Some("Limpieza facial profunda".to_string()),
+            observaciones: None,
+            productos_usados: None,
+            precio_cobrado: Some(45.0),
+            pagado: true,
+            tipo: Some("facial".to_string()),
+            peso: None,
+            altura: None,
+            imc: None,
+            grasa_corporal: None,
+            agua_corporal: None,
+            medida_cadera: None,
+            medida_cintura: None,
+            medida_brazos: None,
+            medida_pecho: None,
+            medida_piernas: None,
+        }).unwrap();
+
+        let ingresos = SesionRepo::list_ingresos(&conn).unwrap();
+        assert_eq!(ingresos.len(), 1);
+        assert_eq!(ingresos[0].id, sid);
+        assert_eq!(ingresos[0].paciente_nombre.as_deref(), Some("María González"));
+
+        // Deactivate patient and ensure accounting still shows the patient's name
+        PacienteRepo::desactivar(&conn, pid).unwrap();
+        let ingresos_after = SesionRepo::list_ingresos(&conn).unwrap();
+        assert_eq!(ingresos_after[0].paciente_nombre.as_deref(), Some("María González"));
+    }
+}
+
 

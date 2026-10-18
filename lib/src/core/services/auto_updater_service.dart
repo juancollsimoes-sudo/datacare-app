@@ -1,52 +1,97 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 
 class AutoUpdaterService {
-  static Future<void> checkForUpdates(BuildContext context) async {
-    if (!Platform.isWindows) return;
+  static const String _releasesUrl =
+      'https://api.github.com/repos/juancollsimoes-sudo/datacare-app/releases/latest';
+
+  static Future<void> checkForUpdates(
+    BuildContext context, {
+    bool manualCheck = false,
+  }) async {
+    if (kIsWeb || (!Platform.isWindows && !manualCheck)) return;
 
     try {
-      final response = await http.get(Uri.parse('https://api.github.com/repos/juancollsimoes-sudo/datacare-app/releases/latest'));
-      
+      final response = await http.get(
+        Uri.parse(_releasesUrl),
+        headers: const {
+          'User-Agent': 'DataCare-AutoUpdater',
+          'Accept': 'application/vnd.github+json',
+        },
+      );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final String latestVersion = data['tag_name'];
-        final String downloadUrl = _getAssetUrl(data['assets'], 'datacare-windows.zip');
+        final String latestVersion = (data['tag_name'] ?? '').toString();
+        final List<dynamic> assets = (data['assets'] as List<dynamic>?) ?? [];
+        final String downloadUrl = getAssetUrl(assets, 'datacare-windows.zip');
 
-        if (_isNewerVersion(latestVersion, AppConstants.appVersion) && downloadUrl.isNotEmpty) {
+        if (isNewerVersion(latestVersion, AppConstants.appVersion) &&
+            downloadUrl.isNotEmpty) {
           if (context.mounted) {
             _showUpdateDialog(context, latestVersion, downloadUrl);
           }
+        } else if (manualCheck && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Estás en la versión más reciente (${AppConstants.appVersion}).',
+              ),
+            ),
+          );
         }
+      } else if (manualCheck && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'No se pudo verificar actualizaciones (código ${response.statusCode}).',
+            ),
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Error checking for updates: $e');
+      if (manualCheck && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al verificar actualizaciones: $e')),
+        );
+      }
     }
   }
 
-  static String _getAssetUrl(List<dynamic> assets, String name) {
-    for (var asset in assets) {
-      if (asset['name'] == name) {
-        return asset['browser_download_url'];
+  static String getAssetUrl(List<dynamic> assets, String preferredName) {
+    for (final asset in assets) {
+      if (asset is Map && asset['name'] == preferredName) {
+        return (asset['browser_download_url'] ?? '').toString();
+      }
+    }
+    for (final asset in assets) {
+      if (asset is Map) {
+        final name = (asset['name'] ?? '').toString().toLowerCase();
+        if (name.startsWith('datacare-windows-portable') &&
+            name.endsWith('.zip')) {
+          return (asset['browser_download_url'] ?? '').toString();
+        }
       }
     }
     return '';
   }
 
-  static bool _isNewerVersion(String latest, String current) {
+  static bool isNewerVersion(String latest, String current) {
     try {
-      final latestStr = latest.replaceAll('v', '');
-      final currentStr = current.replaceAll('v', '');
-      
+      final latestStr = latest.trim().replaceAll(RegExp(r'^[vV]'), '').split('+').first;
+      final currentStr = current.trim().replaceAll(RegExp(r'^[vV]'), '').split('+').first;
+
       final latestParts = latestStr.split('.').map(int.parse).toList();
       final currentParts = currentStr.split('.').map(int.parse).toList();
-      
+
       for (int i = 0; i < 3; i++) {
-        int l = i < latestParts.length ? latestParts[i] : 0;
-        int c = i < currentParts.length ? currentParts[i] : 0;
+        final int l = i < latestParts.length ? latestParts[i] : 0;
+        final int c = i < currentParts.length ? currentParts[i] : 0;
         if (l > c) return true;
         if (l < c) return false;
       }
@@ -56,14 +101,20 @@ class AutoUpdaterService {
     return false;
   }
 
-  static void _showUpdateDialog(BuildContext context, String version, String downloadUrl) {
+  static void _showUpdateDialog(
+    BuildContext context,
+    String version,
+    String downloadUrl,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Actualización disponible'),
-          content: Text('Hay una actualización disponible ($version). ¿Deseas actualizar ahora?'),
+          content: Text(
+            'Hay una nueva versión disponible ($version). Tu versión actual es ${AppConstants.appVersion}.\n\n¿Deseas descargar e instalar la actualización ahora?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
@@ -72,7 +123,9 @@ class AutoUpdaterService {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _downloadAndInstallUpdate(context, downloadUrl);
+                if (!kIsWeb && Platform.isWindows) {
+                  _downloadAndInstallUpdate(context, downloadUrl);
+                }
               },
               child: const Text('Actualizar ahora'),
             ),
@@ -82,7 +135,23 @@ class AutoUpdaterService {
     );
   }
 
-  static Future<void> _downloadAndInstallUpdate(BuildContext context, String url) async {
+  static Future<bool> _canWriteToDirectory(String dirPath) async {
+    try {
+      final testFile = File('$dirPath\\.datacare_write_test');
+      await testFile.writeAsString('ok');
+      if (await testFile.exists()) {
+        await testFile.delete();
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> _downloadAndInstallUpdate(
+    BuildContext context,
+    String url,
+  ) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -91,15 +160,18 @@ class AutoUpdaterService {
           children: [
             CircularProgressIndicator(),
             SizedBox(width: 24),
-            Text('Descargando actualización...'),
+            Expanded(child: Text('Descargando e instalando actualización...')),
           ],
         ),
       ),
     );
 
     try {
-      final response = await http.get(Uri.parse(url));
-      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: const {'User-Agent': 'DataCare-AutoUpdater'},
+      );
+
       if (response.statusCode == 200) {
         final tempDir = Directory.systemTemp;
         final zipFile = File('${tempDir.path}\\datacare-windows.zip');
@@ -110,27 +182,68 @@ class AutoUpdaterService {
         if (await extractDir.exists()) {
           await extractDir.delete(recursive: true);
         }
-        await extractDir.create();
+        await extractDir.create(recursive: true);
 
-        // Extract using PowerShell
-        await Process.run('powershell', [
-          '-command', 
-          'Expand-Archive -Path "${zipFile.path}" -DestinationPath "$extractPath" -Force'
+        // Extract using PowerShell with LiteralPath to support spaces in user paths
+        final psResult = await Process.run('powershell', [
+          '-NoProfile',
+          '-NonInteractive',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          "Expand-Archive -LiteralPath '${zipFile.path}' -DestinationPath '$extractPath' -Force",
         ]);
 
+        if (psResult.exitCode != 0) {
+          throw Exception(
+            'Error al descomprimir actualización: ${psResult.stderr}',
+          );
+        }
+
         final appDir = File(Platform.resolvedExecutable).parent.path;
-        final batFile = File('${tempDir.path}\\update.bat');
+        final batFile = File('${tempDir.path}\\update_datacare.bat');
 
         await batFile.writeAsString('''
 @echo off
-timeout /t 2 /nobreak > nul
-xcopy /s /y /e "$extractPath\\*" "$appDir\\"
+:waitloop
+tasklist /FI "IMAGENAME eq datacare.exe" 2>NUL | find /I /N "datacare.exe">NUL
+if "%ERRORLEVEL%"=="0" (
+    timeout /t 1 /nobreak > nul
+    goto waitloop
+)
+robocopy "$extractPath" "$appDir" /E /IS /IT /R:5 /W:1 > nul
+if %ERRORLEVEL% GEQ 8 (
+    xcopy /s /y /e /i "$extractPath\\*" "$appDir\\" > nul
+)
 start "" "$appDir\\datacare.exe"
 del "%~f0"
 ''');
 
-        await Process.start('cmd', ['/c', batFile.path], mode: ProcessStartMode.detached);
+        final writable = await _canWriteToDirectory(appDir);
+        if (writable) {
+          await Process.start(
+            'cmd',
+            ['/c', batFile.path],
+            mode: ProcessStartMode.detached,
+          );
+        } else {
+          // Request UAC elevation when installed in C:\Program Files
+          await Process.start(
+            'powershell',
+            [
+              '-NoProfile',
+              '-NonInteractive',
+              '-ExecutionPolicy',
+              'Bypass',
+              '-Command',
+              "Start-Process cmd.exe -ArgumentList '/c \"\"${batFile.path}\"\"' -Verb RunAs -WindowStyle Hidden",
+            ],
+            mode: ProcessStartMode.detached,
+          );
+        }
         exit(0);
+      } else {
+        throw Exception('Descarga fallida (HTTP ${response.statusCode})');
       }
     } catch (e) {
       if (context.mounted) {

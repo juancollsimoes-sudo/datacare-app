@@ -86,7 +86,12 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
               children: [
                 Row(
                   children: [
-                    Text('Detalles de la Sesión #${session.id}', style: theme.textTheme.titleLarge),
+                    Text(
+                      (session.pacienteNombre != null && session.pacienteNombre!.trim().isNotEmpty)
+                          ? session.pacienteNombre!.trim()
+                          : 'Detalles de la Sesión #${session.id}',
+                      style: theme.textTheme.titleLarge,
+                    ),
                     const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -272,7 +277,11 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                               ),
                               title: Row(
                                 children: [
-                                  Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
+                                  Text(
+                                    (event.pacienteNombre != null && event.pacienteNombre!.trim().isNotEmpty)
+                                        ? '${event.pacienteNombre!.trim()} - ${event.fecha.split('T')[0]}'
+                                        : 'Sesión #${event.id} - ${event.fecha.split('T')[0]}',
+                                  ),
                                   const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -343,7 +352,11 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                                     ),
                                     title: Row(
                                       children: [
-                                        Text('Sesión #${event.id} - ${event.fecha.split('T')[0]}'),
+                                        Text(
+                                    (event.pacienteNombre != null && event.pacienteNombre!.trim().isNotEmpty)
+                                        ? '${event.pacienteNombre!.trim()} - ${event.fecha.split('T')[0]}'
+                                        : 'Sesión #${event.id} - ${event.fecha.split('T')[0]}',
+                                  ),
                                         const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
