@@ -36,6 +36,126 @@ String spanishMonthName(int month) {
   return 'Mes';
 }
 
+class _AnimatedCurrencyText extends StatelessWidget {
+  final double value;
+  final TextStyle style;
+
+  const _AnimatedCurrencyText({
+    required this.value,
+    required this.style,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: value),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, child) {
+        return Text(
+          '\$${animatedValue.toStringAsFixed(2)}',
+          style: style,
+        );
+      },
+    );
+  }
+}
+
+class _MetricCard extends StatefulWidget {
+  final String title;
+  final double amount;
+  final Color color;
+  final IconData icon;
+
+  const _MetricCard({
+    required this.title,
+    required this.amount,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  State<_MetricCard> createState() => _MetricCardState();
+}
+
+class _MetricCardState extends State<_MetricCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        transform: _isHovered
+            ? (Matrix4.identity()..translateByDouble(0.0, -3.0, 0.0, 1.0))
+            : Matrix4.identity(),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: _isHovered
+                ? widget.color.withValues(alpha: 0.5)
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: _isHovered ? 1.5 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _isHovered
+                  ? widget.color.withValues(alpha: isDark ? 0.35 : 0.16)
+                  : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: _isHovered ? 14 : 5,
+              offset: Offset(0, _isHovered ? 5 : 2),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 18.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(widget.icon, size: 16, color: widget.color),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.title,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _AnimatedCurrencyText(
+              value: widget.amount,
+              style: TextStyle(
+                color: widget.color,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class AccountingScreen extends ConsumerStatefulWidget {
   const AccountingScreen({super.key});
 
@@ -475,51 +595,75 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         ),
         const Divider(height: 1),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: [
-                  _buildSummaryCard(
-                    'Ingresos',
-                    currentMonthIncome,
-                    Colors.green.shade700,
-                  ),
-                  _buildSummaryCard(
-                    'Gastos Operativos',
-                    subtotalOperationalExpenses,
-                    Colors.red.shade600,
-                  ),
-                  _buildSummaryCard(
-                    'Gastos Personales',
-                    totalPersonalExpenses,
-                    Colors.deepOrange.shade700,
-                  ),
-                  _buildSummaryCard(
-                    'Total Gastos',
-                    totalExpenses,
-                    Colors.red.shade900,
-                  ),
-                  _buildSummaryCard(
-                    'Saldo',
-                    balance,
-                    balance >= 0 ? Colors.blue.shade700 : Colors.orange.shade800,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // 1. Movimientos de Ingresos y Gastos Operativos
-              Text(
-                'Movimientos Contables del Mes (Sesiones e Insumos)',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, 0.02),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
                 ),
-              ),
+              );
+            },
+            child: SingleChildScrollView(
+              key: ValueKey('${_selectedMonth.year}-${_selectedMonth.month}'),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _MetricCard(
+                        title: 'Ingresos',
+                        amount: currentMonthIncome,
+                        color: Colors.green.shade700,
+                        icon: Icons.trending_up,
+                      ),
+                      _MetricCard(
+                        title: 'Gastos Operativos',
+                        amount: subtotalOperationalExpenses,
+                        color: Colors.red.shade600,
+                        icon: Icons.storefront_outlined,
+                      ),
+                      _MetricCard(
+                        title: 'Gastos Personales',
+                        amount: totalPersonalExpenses,
+                        color: Colors.deepOrange.shade700,
+                        icon: Icons.person_outline,
+                      ),
+                      _MetricCard(
+                        title: 'Total Gastos',
+                        amount: totalExpenses,
+                        color: Colors.red.shade900,
+                        icon: Icons.receipt_long,
+                      ),
+                      _MetricCard(
+                        title: 'Saldo',
+                        amount: balance,
+                        color: balance >= 0
+                            ? Colors.blue.shade700
+                            : Colors.orange.shade800,
+                        icon: Icons.account_balance_wallet_outlined,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // 1. Movimientos de Ingresos y Gastos Operativos
+                  Text(
+                    'Movimientos Contables del Mes (Sesiones e Insumos)',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
               const SizedBox(height: 8),
               if (mainTransactions.isEmpty)
                 Card(
@@ -794,33 +938,33 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                       const SizedBox(height: 12),
                       _buildClosingRow(
                         '(+) Total Ingresos por Sesiones:',
-                        '\$${currentMonthIncome.toStringAsFixed(2)}',
+                        currentMonthIncome,
                         Colors.green.shade700,
                       ),
                       const SizedBox(height: 6),
                       _buildClosingRow(
                         '(-) Subtotal Gastos Operativos:',
-                        '\$${subtotalOperationalExpenses.toStringAsFixed(2)}',
+                        subtotalOperationalExpenses,
                         Colors.red.shade600,
                       ),
                       const SizedBox(height: 6),
                       _buildClosingRow(
                         '(-) Renglón Gastos Personales (Totalizados):',
-                        '\$${totalPersonalExpenses.toStringAsFixed(2)}',
+                        totalPersonalExpenses,
                         Colors.deepOrange.shade700,
                         isBold: true,
                       ),
                       const Divider(height: 18),
                       _buildClosingRow(
                         '(=) Total General de Gastos Incorporados:',
-                        '\$${totalExpenses.toStringAsFixed(2)}',
+                        totalExpenses,
                         Colors.red.shade900,
                         isBold: true,
                       ),
                       const SizedBox(height: 8),
                       _buildClosingRow(
                         '(=) SALDO NETO CONTABLE DEL MES:',
-                        '\$${balance.toStringAsFixed(2)}',
+                        balance,
                         balance >= 0
                             ? Colors.blue.shade700
                             : Colors.orange.shade800,
@@ -833,16 +977,17 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
               ),
               const SizedBox(height: 64),
             ],
-            ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ),
+  ],
+);
+}
 
   Widget _buildClosingRow(
     String label,
-    String value,
+    double value,
     Color valueColor, {
     bool isBold = false,
     double fontSize = 14,
@@ -859,8 +1004,8 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
             ),
           ),
         ),
-        Text(
-          value,
+        _AnimatedCurrencyText(
+          value: value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: valueColor,
@@ -871,27 +1016,27 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String title, double amount, Color color) {
-    return Card(
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 18.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            Text(
-              '\$${amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: color,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+  Widget _buildChartLegendItem({
+    required Color color,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
         ),
-      ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+      ],
     );
   }
 
@@ -942,108 +1087,189 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
 
     maxY = maxY > 0 ? maxY * 1.2 : 100;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(
         right: 32.0,
         left: 16.0,
-        top: 40.0,
+        top: 24.0,
         bottom: 16.0,
       ),
-      child: LineChart(
-        LineChartData(
-          gridData: const FlGridData(show: true, drawVerticalLine: true),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: 5,
-                getTitlesWidget: (value, meta) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      'Día ${value.toInt()}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildChartLegendItem(
+                color: Colors.green.shade600,
+                label: 'Ingresos por Sesiones',
+              ),
+              const SizedBox(width: 32),
+              _buildChartLegendItem(
+                color: Colors.redAccent,
+                label: 'Gastos Registrados',
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: theme.dividerColor.withValues(alpha: 0.15),
+                    strokeWidth: 1,
+                  ),
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: theme.dividerColor.withValues(alpha: 0.1),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      interval: 5,
+                      getTitlesWidget: (value, meta) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            'Día ${value.toInt()}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 64,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          '\$${value.toInt()}',
+                          style: const TextStyle(fontSize: 12),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(
+                    color: theme.dividerColor.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                minX: 1,
+                maxX: daysInMonth.toDouble(),
+                minY: 0,
+                maxY: maxY,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: incomeSpots,
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    preventCurveOverShooting: true,
+                    color: Colors.green.shade600,
+                    barWidth: 3.5,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 3.5,
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                        strokeColor: Colors.green.shade600,
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 60,
-                getTitlesWidget: (value, meta) {
-                  return Text(
-                    '\$${value.toInt()}',
-                    style: const TextStyle(fontSize: 12),
-                  );
-                },
-              ),
-            ),
-          ),
-          borderData: FlBorderData(
-            show: true,
-            border: Border.all(color: const Color(0xff37434d), width: 1),
-          ),
-          minX: 1,
-          maxX: daysInMonth.toDouble(),
-          minY: 0,
-          maxY: maxY,
-          lineBarsData: [
-            LineChartBarData(
-              spots: incomeSpots,
-              isCurved: false,
-              color: Colors.green,
-              barWidth: 4,
-              isStrokeCapRound: true,
-              dotData: const FlDotData(show: true),
-              belowBarData: BarAreaData(
-                show: true,
-                color: Colors.green.withValues(alpha: 0.1),
-              ),
-            ),
-            LineChartBarData(
-              spots: expenseSpots,
-              isCurved: false,
-              color: Colors.red,
-              barWidth: 4,
-              isStrokeCapRound: true,
-              dotData: const FlDotData(show: true),
-              belowBarData: BarAreaData(
-                show: true,
-                color: Colors.red.withValues(alpha: 0.1),
-              ),
-            ),
-          ],
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (touchedSpot) => Colors.blueGrey.shade800,
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map((LineBarSpot touchedSpot) {
-                  final isIncome = touchedSpot.barIndex == 0;
-                  return LineTooltipItem(
-                    '${isIncome ? 'Ingreso' : 'Gasto'}: \$${touchedSpot.y.toStringAsFixed(2)}',
-                    TextStyle(
-                      color: isIncome ? Colors.greenAccent : Colors.redAccent,
-                      fontWeight: FontWeight.bold,
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.green.withValues(alpha: 0.25),
+                          Colors.green.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
-                  );
-                }).toList();
-              },
+                  ),
+                  LineChartBarData(
+                    spots: expenseSpots,
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    preventCurveOverShooting: true,
+                    color: Colors.redAccent,
+                    barWidth: 3.5,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 3.5,
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                        strokeColor: Colors.redAccent,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.redAccent.withValues(alpha: 0.2),
+                          Colors.redAccent.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipBorderRadius: BorderRadius.circular(12),
+                    maxContentWidth: 200,
+                    fitInsideHorizontally: true,
+                    getTooltipColor: (touchedSpot) => isDark
+                        ? Colors.blueGrey.shade800.withValues(alpha: 0.95)
+                        : Colors.blueGrey.shade900.withValues(alpha: 0.92),
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((LineBarSpot touchedSpot) {
+                        final isIncome = touchedSpot.barIndex == 0;
+                        return LineTooltipItem(
+                          '${isIncome ? 'Ingreso' : 'Gasto'}: \$${touchedSpot.y.toStringAsFixed(2)}',
+                          TextStyle(
+                            color: isIncome
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
