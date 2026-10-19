@@ -38,3 +38,21 @@ Future<Uint8List> apiGenerateAccountingReportBytes({
   year: year,
   month: month,
 );
+
+Future<String> apiGenerateExpensesExcel({
+  required int year,
+  required int month,
+  required String outputPath,
+}) => RustLib.instance.api.crateApiPdfApiApiGenerateExpensesExcel(
+  year: year,
+  month: month,
+  outputPath: outputPath,
+);
+
+Future<Uint8List> apiGenerateExpensesExcelBytes({
+  required int year,
+  required int month,
+}) => RustLib.instance.api.crateApiPdfApiApiGenerateExpensesExcelBytes(
+  year: year,
+  month: month,
+);

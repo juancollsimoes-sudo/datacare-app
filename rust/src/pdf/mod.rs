@@ -563,6 +563,391 @@ pub fn generate_accounting_report(year: i32, month: i32, output_path: String) ->
     Ok(output_path)
 }
 
+fn xml_escape(input: &str) -> String {
+    input
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
+fn write_inline_str_cell(xml: &mut String, col: &str, row: u32, style: u32, text: &str) {
+    xml.push_str(&format!(
+        r#"<c r="{}{}" s="{}" t="inlineStr"><is><t>{}</t></is></c>"#,
+        col,
+        row,
+        style,
+        xml_escape(text)
+    ));
+}
+
+fn write_number_cell(xml: &mut String, col: &str, row: u32, style: u32, val: f64) {
+    xml.push_str(&format!(
+        r#"<c r="{}{}" s="{}"><v>{:.2}</v></c>"#,
+        col, row, style, val
+    ));
+}
+
+pub fn generate_expenses_excel_bytes_from_conn(
+    conn: &Connection,
+    year: i32,
+    month: i32,
+) -> Result<Vec<u8>, AppError> {
+    use std::io::{Cursor, Write};
+    use zip::write::SimpleFileOptions;
+    use zip::ZipWriter;
+
+    let summary = calculate_monthly_closing(conn, year, month)?;
+    let mes_nombre = month_name_es(month);
+
+    let mut sheet_xml = String::from(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<cols>
+  <col min="1" max="1" width="16" customWidth="1"/>
+  <col min="2" max="2" width="32" customWidth="1"/>
+  <col min="3" max="3" width="24" customWidth="1"/>
+  <col min="4" max="4" width="38" customWidth="1"/>
+  <col min="5" max="5" width="18" customWidth="1"/>
+</cols>
+<sheetData>"#,
+    );
+
+    let mut row_idx: u32 = 1;
+
+    // Row 1: Title
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        1,
+        &format!("REPORTE DE GASTOS Y COMPRAS - {} {}", mes_nombre.to_uppercase(), year),
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    // Row 2: Subtitle
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        0,
+        "Beauty Sweet Care Spa - Contaduría",
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 2;
+
+    // Section 1: Gastos Operativos y Compras
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        4,
+        "1. GASTOS OPERATIVOS Y COMPRAS DE CLÍNICA",
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    // Table 1 Headers
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(&mut sheet_xml, "A", row_idx, 2, "Fecha");
+    write_inline_str_cell(&mut sheet_xml, "B", row_idx, 2, "Concepto / Compra");
+    write_inline_str_cell(&mut sheet_xml, "C", row_idx, 2, "Categoría");
+    write_inline_str_cell(&mut sheet_xml, "D", row_idx, 2, "Descripción");
+    write_inline_str_cell(&mut sheet_xml, "E", row_idx, 2, "Monto ($)");
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    if summary.gastos_operativos.is_empty() {
+        sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+        write_inline_str_cell(
+            &mut sheet_xml,
+            "A",
+            row_idx,
+            0,
+            "Sin gastos operativos ni compras registrados en este mes",
+        );
+        write_number_cell(&mut sheet_xml, "E", row_idx, 3, 0.0);
+        sheet_xml.push_str("</row>");
+        row_idx += 1;
+    } else {
+        for g in &summary.gastos_operativos {
+            let fecha_corta = g.fecha.split('T').next().unwrap_or(&g.fecha);
+            let cat = g.categoria.as_deref().unwrap_or("Compra / Operativo");
+            let desc = g.descripcion.as_deref().unwrap_or("");
+            sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+            write_inline_str_cell(&mut sheet_xml, "A", row_idx, 0, fecha_corta);
+            write_inline_str_cell(&mut sheet_xml, "B", row_idx, 0, &g.nombre);
+            write_inline_str_cell(&mut sheet_xml, "C", row_idx, 0, cat);
+            write_inline_str_cell(&mut sheet_xml, "D", row_idx, 0, desc);
+            write_number_cell(&mut sheet_xml, "E", row_idx, 3, g.monto);
+            sheet_xml.push_str("</row>");
+            row_idx += 1;
+        }
+    }
+
+    // Subtotal Operational / Compras
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        4,
+        "SUBTOTAL GASTOS OPERATIVOS Y COMPRAS",
+    );
+    write_inline_str_cell(&mut sheet_xml, "B", row_idx, 4, "");
+    write_inline_str_cell(&mut sheet_xml, "C", row_idx, 4, "");
+    write_inline_str_cell(&mut sheet_xml, "D", row_idx, 4, "");
+    write_number_cell(
+        &mut sheet_xml,
+        "E",
+        row_idx,
+        5,
+        summary.subtotal_gastos_operativos,
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 2;
+
+    // Section 2: Renglón de Gastos Personales
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        4,
+        "2. RENGLÓN DE GASTOS PERSONALES (INCORPORADOS A CONTABILIDAD)",
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    // Table 2 Headers
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(&mut sheet_xml, "A", row_idx, 2, "Fecha");
+    write_inline_str_cell(&mut sheet_xml, "B", row_idx, 2, "Concepto Personal");
+    write_inline_str_cell(&mut sheet_xml, "C", row_idx, 2, "Categoría");
+    write_inline_str_cell(&mut sheet_xml, "D", row_idx, 2, "Descripción");
+    write_inline_str_cell(&mut sheet_xml, "E", row_idx, 2, "Monto ($)");
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    if summary.gastos_personales.is_empty() {
+        sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+        write_inline_str_cell(
+            &mut sheet_xml,
+            "A",
+            row_idx,
+            0,
+            "Sin gastos personales registrados en este mes",
+        );
+        write_number_cell(&mut sheet_xml, "E", row_idx, 3, 0.0);
+        sheet_xml.push_str("</row>");
+        row_idx += 1;
+    } else {
+        for g in &summary.gastos_personales {
+            let fecha_corta = g.fecha.split('T').next().unwrap_or(&g.fecha);
+            let cat = g.categoria.as_deref().unwrap_or("Gastos Personales");
+            let desc = g.descripcion.as_deref().unwrap_or("");
+            sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+            write_inline_str_cell(&mut sheet_xml, "A", row_idx, 0, fecha_corta);
+            write_inline_str_cell(&mut sheet_xml, "B", row_idx, 0, &g.nombre);
+            write_inline_str_cell(&mut sheet_xml, "C", row_idx, 0, cat);
+            write_inline_str_cell(&mut sheet_xml, "D", row_idx, 0, desc);
+            write_number_cell(&mut sheet_xml, "E", row_idx, 3, g.monto);
+            sheet_xml.push_str("</row>");
+            row_idx += 1;
+        }
+    }
+
+    // Subtotal Personal Expenses
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        4,
+        "TOTAL RENGLÓN GASTOS PERSONALES",
+    );
+    write_inline_str_cell(&mut sheet_xml, "B", row_idx, 4, "");
+    write_inline_str_cell(&mut sheet_xml, "C", row_idx, 4, "");
+    write_inline_str_cell(&mut sheet_xml, "D", row_idx, 4, "");
+    write_number_cell(
+        &mut sheet_xml,
+        "E",
+        row_idx,
+        5,
+        summary.total_gastos_personales,
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 2;
+
+    // Section 3: Total General de Gastos y Compras
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        2,
+        "3. RESUMEN Y TOTAL GENERAL DE GASTOS Y COMPRAS",
+    );
+    write_inline_str_cell(&mut sheet_xml, "B", row_idx, 2, "");
+    write_inline_str_cell(&mut sheet_xml, "C", row_idx, 2, "");
+    write_inline_str_cell(&mut sheet_xml, "D", row_idx, 2, "");
+    write_inline_str_cell(&mut sheet_xml, "E", row_idx, 2, "Total ($)");
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        0,
+        "Subtotal Gastos Operativos y Compras",
+    );
+    write_number_cell(
+        &mut sheet_xml,
+        "E",
+        row_idx,
+        3,
+        summary.subtotal_gastos_operativos,
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        0,
+        "Total Renglón Gastos Personales (Incorporado)",
+    );
+    write_number_cell(
+        &mut sheet_xml,
+        "E",
+        row_idx,
+        3,
+        summary.total_gastos_personales,
+    );
+    sheet_xml.push_str("</row>");
+    row_idx += 1;
+
+    sheet_xml.push_str(&format!(r#"<row r="{}">"#, row_idx));
+    write_inline_str_cell(
+        &mut sheet_xml,
+        "A",
+        row_idx,
+        4,
+        "TOTAL GENERAL DE GASTOS Y COMPRAS DEL MES",
+    );
+    write_inline_str_cell(&mut sheet_xml, "B", row_idx, 4, "");
+    write_inline_str_cell(&mut sheet_xml, "C", row_idx, 4, "");
+    write_inline_str_cell(&mut sheet_xml, "D", row_idx, 4, "");
+    write_number_cell(&mut sheet_xml, "E", row_idx, 5, summary.total_gastos);
+    sheet_xml.push_str("</row>");
+
+    sheet_xml.push_str("</sheetData></worksheet>");
+
+    let content_types_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>"#;
+
+    let root_rels_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#;
+
+    let workbook_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Gastos y Compras" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>"#;
+
+    let workbook_rels_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>"#;
+
+    let styles_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="1">
+    <numFmt numFmtId="164" formatCode="$#,##0.00"/>
+  </numFmts>
+  <fonts count="4">
+    <font><sz val="11"/><name val="Calibri"/></font>
+    <font><b/><sz val="14"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><name val="Calibri"/></font>
+  </fonts>
+  <fills count="4">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFC77D9C"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF3E5EC"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="1">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="6">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+    <xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+    <xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+    <xf numFmtId="164" fontId="3" fillId="3" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/>
+  </cellXfs>
+</styleSheet>"#;
+
+    let buf = Cursor::new(Vec::new());
+    let mut zip = ZipWriter::new(buf);
+    let options = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+
+    let add_xml_file = |zip: &mut ZipWriter<Cursor<Vec<u8>>>, path: &str, content: &str| -> Result<(), AppError> {
+        zip.start_file(path, options)
+            .map_err(|e| AppError::IoError(e.to_string()))?;
+        zip.write_all(content.as_bytes())
+            .map_err(|e| AppError::IoError(e.to_string()))?;
+        Ok(())
+    };
+
+    add_xml_file(&mut zip, "[Content_Types].xml", content_types_xml)?;
+    add_xml_file(&mut zip, "_rels/.rels", root_rels_xml)?;
+    add_xml_file(&mut zip, "xl/workbook.xml", workbook_xml)?;
+    add_xml_file(&mut zip, "xl/_rels/workbook.xml.rels", workbook_rels_xml)?;
+    add_xml_file(&mut zip, "xl/styles.xml", styles_xml)?;
+    add_xml_file(&mut zip, "xl/worksheets/sheet1.xml", &sheet_xml)?;
+
+    let cursor = zip.finish().map_err(|e| AppError::IoError(e.to_string()))?;
+    Ok(cursor.into_inner())
+}
+
+pub fn generate_expenses_excel_bytes(year: i32, month: i32) -> Result<Vec<u8>, AppError> {
+    let conn = DatabaseManager::get_conn()?;
+    generate_expenses_excel_bytes_from_conn(&conn, year, month)
+}
+
+pub fn generate_expenses_excel(year: i32, month: i32, output_path: String) -> Result<String, AppError> {
+    let bytes = generate_expenses_excel_bytes(year, month)?;
+    let mut file = BufWriter::new(File::create(&output_path).map_err(|e| AppError::IoError(e.to_string()))?);
+    std::io::Write::write_all(&mut file, &bytes).map_err(|e| AppError::IoError(e.to_string()))?;
+    Ok(output_path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -669,6 +1054,15 @@ mod tests {
         let pdf_bytes = generate_accounting_report_bytes_from_conn(&conn, 2026, 10).unwrap();
         assert!(pdf_bytes.len() > 500);
         assert_eq!(&pdf_bytes[0..5], b"%PDF-");
+
+        // Verify Excel (.xlsx) generation and parse it back with calamine!
+        let xlsx_bytes = generate_expenses_excel_bytes_from_conn(&conn, 2026, 10).unwrap();
+        assert_eq!(&xlsx_bytes[0..2], b"PK");
+        use calamine::{Reader, Xlsx};
+        let cursor = std::io::Cursor::new(xlsx_bytes);
+        let mut workbook: Xlsx<_> = Xlsx::new(cursor).expect("valid xlsx workbook");
+        let range = workbook.worksheet_range("Gastos y Compras").expect("sheet exists");
+        assert!(range.height() >= 10);
     }
 
     #[test]
@@ -716,5 +1110,6 @@ mod tests {
         assert_eq!(&pdf_bytes[0..5], b"%PDF-");
     }
 }
+
 
 

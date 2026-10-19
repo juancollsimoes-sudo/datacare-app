@@ -44,6 +44,10 @@ abstract class ApiClient {
     required int year,
     required int month,
   });
+  Future<Uint8List> generateExpensesExcelBytes({
+    required int year,
+    required int month,
+  });
   Future<Uint8List> generatePatientReportBytes({
     required PlatformInt64 pacienteId,
   });

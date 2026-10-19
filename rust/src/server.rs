@@ -49,6 +49,7 @@ pub fn build_router() -> Router {
         .route("/gastos/{id}", axum::routing::put(update_gasto).delete(delete_gasto))
         .route("/ingresos", get(list_ingresos))
         .route("/reportes/contabilidad", get(download_accounting_report))
+        .route("/reportes/gastos-excel", get(download_expenses_excel))
         .route("/reportes/paciente/{id}", get(download_patient_report))
         .route("/stats", get(get_stats));
 
@@ -328,6 +329,36 @@ async fn download_accounting_report(
             Ok((
                 [
                     (axum::http::header::CONTENT_TYPE, "application/pdf".to_string()),
+                    (
+                        axum::http::header::CONTENT_DISPOSITION,
+                        format!("attachment; filename=\"{}\"", filename),
+                    ),
+                ],
+                bytes,
+            ))
+        }
+        Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string_err())),
+    }
+}
+
+async fn download_expenses_excel(
+    Query(q): Query<AccountingReportQuery>,
+) -> Result<
+    (
+        [(axum::http::header::HeaderName, String); 2],
+        Vec<u8>,
+    ),
+    (axum::http::StatusCode, String),
+> {
+    match pdf_api::api_generate_expenses_excel_bytes(q.year, q.month) {
+        Ok(bytes) => {
+            let filename = format!("gastos_y_compras_{:04}_{:02}.xlsx", q.year, q.month);
+            Ok((
+                [
+                    (
+                        axum::http::header::CONTENT_TYPE,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".to_string(),
+                    ),
                     (
                         axum::http::header::CONTENT_DISPOSITION,
                         format!("attachment; filename=\"{}\"", filename),

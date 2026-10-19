@@ -65,6 +65,14 @@ class FakeAccountingApiClient implements ApiClient {
   }
 
   @override
+  Future<Uint8List> generateExpensesExcelBytes({
+    required int year,
+    required int month,
+  }) async {
+    return Uint8List.fromList('PK\x03\x04 fake xlsx'.codeUnits);
+  }
+
+  @override
   Future<Uint8List> generatePatientReportBytes({
     required PlatformInt64 pacienteId,
   }) async {
@@ -379,6 +387,8 @@ void main() {
 
         expect(find.text('Carolina Herrera'), findsOneWidget);
         expect(find.textContaining('1544'), findsNothing);
+        expect(find.byKey(const Key('btn_export_expenses_excel')), findsOneWidget);
+        expect(find.text('Descargar Excel (Gastos y Compras)'), findsOneWidget);
       },
     );
   });

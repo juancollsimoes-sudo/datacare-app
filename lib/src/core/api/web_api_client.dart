@@ -389,7 +389,7 @@ class WebApiClient implements ApiClient {
     throw Exception('Failed to load ingresos');
   }
 
-  // Reportes PDF
+  // Reportes PDF y Excel
   @override
   Future<Uint8List> generateAccountingReportBytes({
     required int year,
@@ -404,6 +404,22 @@ class WebApiClient implements ApiClient {
       return response.bodyBytes;
     }
     throw Exception('Failed to generate accounting report PDF');
+  }
+
+  @override
+  Future<Uint8List> generateExpensesExcelBytes({
+    required int year,
+    required int month,
+  }) async {
+    final uri = Uri.parse('$baseUrl/reportes/gastos-excel').replace(queryParameters: {
+      'year': year.toString(),
+      'month': month.toString(),
+    });
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
+    throw Exception('Failed to generate expenses Excel report');
   }
 
   @override

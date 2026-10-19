@@ -107,13 +107,21 @@ class DesktopApiClient implements ApiClient {
     return db_api.listIngresos();
   }
 
-  // Reportes PDF
+  // Reportes PDF y Excel
   @override
   Future<Uint8List> generateAccountingReportBytes({
     required int year,
     required int month,
   }) {
     return pdf_api.apiGenerateAccountingReportBytes(year: year, month: month);
+  }
+
+  @override
+  Future<Uint8List> generateExpensesExcelBytes({
+    required int year,
+    required int month,
+  }) {
+    return pdf_api.apiGenerateExpensesExcelBytes(year: year, month: month);
   }
 
   @override

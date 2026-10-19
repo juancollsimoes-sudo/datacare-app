@@ -45,6 +45,7 @@ class AccountingScreen extends ConsumerStatefulWidget {
 
 class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   bool _isLoading = true;
+  bool _isExportingExcel = false;
   List<Gasto> _gastos = [];
   List<Sesion> _ingresos = [];
   Map<int, String> _patientNames = {};
@@ -54,6 +55,71 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  Future<void> _exportExpensesExcel() async {
+    setState(() => _isExportingExcel = true);
+    try {
+      final api = ref.read(apiClientProvider);
+      final year = _selectedMonth.year;
+      final month = _selectedMonth.month;
+      final excelBytes = await api.generateExpensesExcelBytes(
+        year: year,
+        month: month,
+      );
+
+      final defaultFileName =
+          'gastos_y_compras_${year}_${month.toString().padLeft(2, '0')}.xlsx';
+
+      final outputFileUri = await FilePicker.saveFile(
+        bytes: excelBytes,
+        dialogTitle: 'Guardar Excel de Gastos y Compras',
+        fileName: defaultFileName,
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+      );
+
+      if (outputFileUri != null) {
+        if (!kIsWeb) {
+          final outputPath = outputFileUri.toFilePath();
+          final file = File(outputPath);
+          if (!await file.exists() || await file.length() == 0) {
+            await apiGenerateExpensesExcel(
+              year: year,
+              month: month,
+              outputPath: outputPath,
+            );
+          }
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Excel de Gastos y Compras guardado en: $outputPath',
+                ),
+              ),
+            );
+          }
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Excel de Gastos y Compras descargado correctamente.',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al exportar Excel de gastos: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingExcel = false);
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -310,6 +376,22 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                 ),
                 icon: const Icon(Icons.person_outline, size: 18),
                 label: const Text('Anexar Gasto Personal'),
+              ),
+              FilledButton.tonalIcon(
+                key: const Key('btn_export_expenses_excel'),
+                onPressed: _isExportingExcel ? null : _exportExpensesExcel,
+                icon: _isExportingExcel
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.table_view_rounded, size: 18),
+                label: Text(
+                  _isExportingExcel
+                      ? 'Exportando Excel...'
+                      : 'Descargar Excel (Gastos y Compras)',
+                ),
               ),
               FilledButton.icon(
                 key: const Key('btn_cierre_contable_pdf'),
@@ -1237,8 +1319,9 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   final _descripcionController = TextEditingController();
   final _montoController = TextEditingController();
 
-  String _selectedCategory = 'Otro';
+  String _selectedCategory = 'Compra / Insumos';
   final List<String> _categories = const [
+    'Compra / Insumos',
     'Producto',
     'Máquina',
     'Mantenimiento',
