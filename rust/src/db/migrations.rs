@@ -3,10 +3,14 @@ use rusqlite::Connection;
 use log::info;
 
 pub fn apply_migrations(conn: &mut Connection) -> Result<(), AppError> {
-    // Enable WAL and Foreign Keys
+    // Enable WAL, synchronous NORMAL, Foreign Keys, 64MB cache, in-memory temp store, and MMAP
     conn.execute_batch(
         "PRAGMA journal_mode = WAL;
-         PRAGMA foreign_keys = ON;",
+         PRAGMA synchronous = NORMAL;
+         PRAGMA foreign_keys = ON;
+         PRAGMA cache_size = -64000;
+         PRAGMA temp_store = MEMORY;
+         PRAGMA mmap_size = 268435456;",
     )?;
 
     // Create schema_version table if not exists
@@ -153,6 +157,18 @@ pub fn apply_migrations(conn: &mut Connection) -> Result<(), AppError> {
             ALTER TABLE pacientes ADD COLUMN diagnostico_tactil TEXT;
             "#,
         ),
+        (
+            6,
+            "Add performance indexes for sessions, expenses, and patients",
+            r#"
+            CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
+            CREATE INDEX IF NOT EXISTS idx_gastos_categoria ON gastos(categoria);
+            CREATE INDEX IF NOT EXISTS idx_pacientes_activo ON pacientes(activo);
+            CREATE INDEX IF NOT EXISTS idx_sesiones_created_at ON sesiones(created_at);
+            CREATE INDEX IF NOT EXISTS idx_sesiones_pagado ON sesiones(pagado);
+            CREATE INDEX IF NOT EXISTS idx_sesiones_fecha_precio ON sesiones(fecha, precio_cobrado, pagado);
+            "#,
+        ),
     ];
 
     let tx = conn.transaction()?;
@@ -188,7 +204,7 @@ mod tests {
         apply_migrations(&mut conn).unwrap();
 
         let v: i32 = conn.query_row("SELECT MAX(version) FROM schema_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 5, "Schema version should be 5");
+        assert_eq!(v, 6, "Schema version should be 6");
 
         // Check if clinical columns exist in pacientes
         conn.execute(
@@ -219,5 +235,16 @@ mod tests {
 
         let grasa: f64 = conn.query_row("SELECT grasa_corporal FROM sesiones WHERE paciente_id = ?", [paciente_id], |r| r.get(0)).unwrap();
         assert_eq!(grasa, 28.5);
+
+        // Verify Migration 6 performance indexes exist
+        let index_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name IN (
+                'idx_gastos_fecha', 'idx_gastos_categoria', 'idx_pacientes_activo',
+                'idx_sesiones_created_at', 'idx_sesiones_pagado', 'idx_sesiones_fecha_precio'
+            )",
+            [],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(index_count, 6, "All 6 performance indexes should exist");
     }
 }

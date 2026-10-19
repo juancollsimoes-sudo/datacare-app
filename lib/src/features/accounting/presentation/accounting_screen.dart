@@ -179,6 +179,14 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   _TransactionFilter _activeFilter = _TransactionFilter.all;
 
+  // Chart data cache for smooth 120fps hover interactions
+  DateTime? _cachedChartMonth;
+  int _cachedChartIngresosLen = -1;
+  int _cachedChartGastosLen = -1;
+  List<FlSpot> _cachedIncomeSpots = [];
+  List<FlSpot> _cachedExpenseSpots = [];
+  double _cachedChartMaxY = 100;
+
   @override
   void initState() {
     super.initState();
@@ -304,15 +312,20 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     return 'Paciente #${sesion.pacienteId}';
   }
 
+  String get _selectedMonthPrefix =>
+      '${_selectedMonth.year.toString().padLeft(4, '0')}-${_selectedMonth.month.toString().padLeft(2, '0')}';
+
   bool _isInSelectedMonth(String dateStr) {
+    final trimmed = dateStr.trim();
+    if (trimmed.startsWith(_selectedMonthPrefix)) {
+      return true;
+    }
     try {
-      final parsed = DateTime.parse(dateStr);
+      final parsed = DateTime.parse(trimmed);
       return parsed.year == _selectedMonth.year &&
           parsed.month == _selectedMonth.month;
     } catch (_) {
-      final prefix =
-          '${_selectedMonth.year.toString().padLeft(4, '0')}-${_selectedMonth.month.toString().padLeft(2, '0')}';
-      return dateStr.trim().startsWith(prefix);
+      return false;
     }
   }
 
@@ -1337,51 +1350,65 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   }
 
   Widget _buildVisualTab() {
-    final Map<int, double> incomesByDay = {};
-    final Map<int, double> expensesByDay = {};
-
-    for (final s in _ingresos) {
-      if (_isInSelectedMonth(s.fecha)) {
-        try {
-          final date = DateTime.parse(s.fecha);
-          final day = date.day;
-          final inc = s.precioCobrado ?? 0.0;
-          incomesByDay[day] = (incomesByDay[day] ?? 0) + inc;
-        } catch (_) {}
-      }
-    }
-
-    for (final g in _gastos) {
-      if (_isInSelectedMonth(g.fecha)) {
-        try {
-          final date = DateTime.parse(g.fecha);
-          final day = date.day;
-          expensesByDay[day] = (expensesByDay[day] ?? 0) + g.monto;
-        } catch (_) {}
-      }
-    }
-
     final int daysInMonth = DateTime(
       _selectedMonth.year,
       _selectedMonth.month + 1,
       0,
     ).day;
-    final List<FlSpot> incomeSpots = [];
-    final List<FlSpot> expenseSpots = [];
 
-    double maxY = 0;
+    if (_cachedChartMonth != _selectedMonth ||
+        _cachedChartIngresosLen != _ingresos.length ||
+        _cachedChartGastosLen != _gastos.length) {
+      final Map<int, double> incomesByDay = {};
+      final Map<int, double> expensesByDay = {};
 
-    for (int i = 1; i <= daysInMonth; i++) {
-      final inc = incomesByDay[i] ?? 0.0;
-      final exp = expensesByDay[i] ?? 0.0;
-      incomeSpots.add(FlSpot(i.toDouble(), inc));
-      expenseSpots.add(FlSpot(i.toDouble(), exp));
+      for (final s in _ingresos) {
+        if (_isInSelectedMonth(s.fecha)) {
+          try {
+            final date = DateTime.parse(s.fecha);
+            final day = date.day;
+            final inc = s.precioCobrado ?? 0.0;
+            incomesByDay[day] = (incomesByDay[day] ?? 0) + inc;
+          } catch (_) {}
+        }
+      }
 
-      if (inc > maxY) maxY = inc;
-      if (exp > maxY) maxY = exp;
+      for (final g in _gastos) {
+        if (_isInSelectedMonth(g.fecha)) {
+          try {
+            final date = DateTime.parse(g.fecha);
+            final day = date.day;
+            expensesByDay[day] = (expensesByDay[day] ?? 0) + g.monto;
+          } catch (_) {}
+        }
+      }
+
+      final List<FlSpot> incomeSpots = [];
+      final List<FlSpot> expenseSpots = [];
+
+      double maxY = 0;
+
+      for (int i = 1; i <= daysInMonth; i++) {
+        final inc = incomesByDay[i] ?? 0.0;
+        final exp = expensesByDay[i] ?? 0.0;
+        incomeSpots.add(FlSpot(i.toDouble(), inc));
+        expenseSpots.add(FlSpot(i.toDouble(), exp));
+
+        if (inc > maxY) maxY = inc;
+        if (exp > maxY) maxY = exp;
+      }
+
+      _cachedChartMonth = _selectedMonth;
+      _cachedChartIngresosLen = _ingresos.length;
+      _cachedChartGastosLen = _gastos.length;
+      _cachedIncomeSpots = incomeSpots;
+      _cachedExpenseSpots = expenseSpots;
+      _cachedChartMaxY = maxY > 0 ? maxY * 1.2 : 100;
     }
 
-    maxY = maxY > 0 ? maxY * 1.2 : 100;
+    final incomeSpots = _cachedIncomeSpots;
+    final expenseSpots = _cachedExpenseSpots;
+    final maxY = _cachedChartMaxY;
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;

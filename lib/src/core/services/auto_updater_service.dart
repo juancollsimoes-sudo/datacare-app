@@ -9,11 +9,15 @@ class AutoUpdaterService {
   static const String _releasesUrl =
       'https://api.github.com/repos/juancollsimoes-sudo/datacare-app/releases/latest';
 
+  static bool _hasCheckedOnStartup = false;
+
   static Future<void> checkForUpdates(
     BuildContext context, {
     bool manualCheck = false,
   }) async {
     if (kIsWeb || (!Platform.isWindows && !manualCheck)) return;
+    if (!manualCheck && _hasCheckedOnStartup) return;
+    if (!manualCheck) _hasCheckedOnStartup = true;
 
     try {
       final response = await http.get(

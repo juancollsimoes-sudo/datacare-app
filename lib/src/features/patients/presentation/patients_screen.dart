@@ -27,7 +27,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 300), () {
       ref.read(patientsProvider.notifier).search(query);
     });
   }

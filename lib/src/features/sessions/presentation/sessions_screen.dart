@@ -10,19 +10,19 @@ import 'package:datacare/src/rust/db/models.dart';
 final allSessionsProvider = FutureProvider<Map<DateTime, List<Sesion>>>((ref) async {
   final api = ref.read(apiClientProvider);
   final patientsResult = await api.listPacientes(page: 1, pageSize: 1000);
-  Map<DateTime, List<Sesion>> sessionsMap = {};
+  final Map<DateTime, List<Sesion>> sessionsMap = {};
 
-  for (var patient in patientsResult.items) {
-    final sessionsResult = await api.listSesionesByPaciente(pacienteId: patient.id, page: 1, pageSize: 1000);
-    for (var session in sessionsResult.items) {
+  final results = await Future.wait(
+    patientsResult.items.map((patient) => api.listSesionesByPaciente(pacienteId: patient.id, page: 1, pageSize: 1000)),
+  );
+
+  for (final sessionsResult in results) {
+    for (final session in sessionsResult.items) {
       try {
-        DateTime date = DateTime.parse(session.fecha);
-        DateTime dayOnly = DateTime(date.year, date.month, date.day);
-        if (sessionsMap[dayOnly] == null) {
-          sessionsMap[dayOnly] = [];
-        }
-        sessionsMap[dayOnly]!.add(session);
-      } catch (e) {
+        final date = DateTime.parse(session.fecha);
+        final dayOnly = DateTime(date.year, date.month, date.day);
+        (sessionsMap[dayOnly] ??= []).add(session);
+      } catch (_) {
         // Ignorar fechas inválidas
       }
     }

@@ -165,6 +165,8 @@ class SessionGalleryWidget extends ConsumerWidget {
                           : Image.file(
                               File(photo.rutaThumb ?? photo.rutaFoto),
                               fit: BoxFit.cover,
+                              cacheWidth: 400,
+                              filterQuality: FilterQuality.medium,
                             ),
                       ),
                     ),

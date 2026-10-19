@@ -911,6 +911,8 @@ Widget _buildPatientGalleryCard(BuildContext context, WidgetRef ref, PlatformInt
                             : Image.file(
                                 File(photo.rutaThumb ?? photo.rutaFoto),
                                 fit: BoxFit.cover,
+                                cacheWidth: 400,
+                                filterQuality: FilterQuality.medium,
                               ),
                         ),
                       ),

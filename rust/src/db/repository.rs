@@ -518,7 +518,7 @@ impl StatsRepo {
         ).unwrap_or(0);
 
         let sesiones_este_mes: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM sesiones WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')",
+            "SELECT COUNT(*) FROM sesiones WHERE fecha >= date('now', 'start of month') AND fecha < date('now', 'start of month', '+1 month')",
             [],
             |row| row.get(0),
         ).unwrap_or(0);
