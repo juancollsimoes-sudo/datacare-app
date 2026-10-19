@@ -156,6 +156,13 @@ class _MetricCardState extends State<_MetricCard> {
   }
 }
 
+enum _TransactionFilter {
+  all,
+  incomes,
+  operationalExpenses,
+  personalExpenses,
+}
+
 class AccountingScreen extends ConsumerStatefulWidget {
   const AccountingScreen({super.key});
 
@@ -170,6 +177,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   List<Sesion> _ingresos = [];
   Map<int, String> _patientNames = {};
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  _TransactionFilter _activeFilter = _TransactionFilter.all;
 
   @override
   void initState() {
@@ -568,12 +576,23 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     final totalExpenses = subtotalOperationalExpenses + totalPersonalExpenses;
     final balance = currentMonthIncome - totalExpenses;
 
-    // Combined operational + income transactions for the main list
-    final List<dynamic> mainTransactions = [
-      ...monthIngresos,
-      ...monthOperationalExpenses,
-    ];
-    mainTransactions.sort((a, b) {
+    // Filtered transactions depending on active filter
+    List<dynamic> displayedList;
+    switch (_activeFilter) {
+      case _TransactionFilter.all:
+        displayedList = [...monthIngresos, ...monthOperationalExpenses];
+        break;
+      case _TransactionFilter.incomes:
+        displayedList = [...monthIngresos];
+        break;
+      case _TransactionFilter.operationalExpenses:
+        displayedList = [...monthOperationalExpenses];
+        break;
+      case _TransactionFilter.personalExpenses:
+        displayedList = [];
+        break;
+    }
+    displayedList.sort((a, b) {
       final dateA = a is Gasto ? a.fecha : (a as Sesion).fecha;
       final dateB = b is Gasto ? b.fecha : (b as Sesion).fecha;
       return dateB.compareTo(dateA);
@@ -656,128 +675,207 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  // 1. Movimientos de Ingresos y Gastos Operativos
-                  Text(
-                    'Movimientos Contables del Mes (Sesiones e Insumos)',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              const SizedBox(height: 8),
-              if (mainTransactions.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      'No hay sesiones cobradas ni gastos operativos en este mes.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Card(
-                  child: Column(
-                    children: mainTransactions.map((item) {
-                      final isExpense = item is Gasto;
-                      final String title = isExpense
-                          ? item.nombre
-                          : _resolvePatientName(item as Sesion);
-                      final String date = isExpense
-                          ? item.fecha
-                          : (item as Sesion).fecha;
-                      final double amount = isExpense
-                          ? item.monto
-                          : ((item as Sesion).precioCobrado ?? 0.0);
-                      final String description = isExpense
-                          ? (item.descripcion ?? '')
-                          : ((item as Sesion).notasSesion ??
-                                item.observaciones ??
-                                '');
-                      final String badgeText = isExpense
-                          ? (item.categoria ?? 'Operativo')
-                          : ((item as Sesion).tipo == 'corporal'
-                                ? 'Sesión Corporal'
-                                : 'Sesión Facial');
-
-                      String formattedDate = date;
-                      try {
-                        final parsed = DateTime.parse(date);
-                        formattedDate = DateFormat('yyyy-MM-dd').format(parsed);
-                      } catch (_) {}
-
-                      return ListTile(
-                        onTap: () => _showItemActions(item),
-                        leading: CircleAvatar(
-                          backgroundColor: isExpense
-                              ? Colors.red.shade100
-                              : Colors.green.shade100,
-                          child: Icon(
-                            isExpense ? Icons.remove : Icons.person,
-                            color: isExpense
-                                ? Colors.red.shade700
-                                : Colors.green.shade700,
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isExpense
-                                    ? Colors.red.withValues(alpha: 0.1)
-                                    : Colors.green.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                badgeText,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: isExpense
-                                      ? Colors.red.shade800
-                                      : Colors.green.shade800,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          '$formattedDate${description.isNotEmpty ? " - $description" : ""}',
-                        ),
-                        trailing: Text(
-                          '${isExpense ? "-" : "+"}\$${amount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: isExpense
-                                ? Colors.red.shade700
-                                : Colors.green.shade700,
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _getSectionTitle(_activeFilter),
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
                           ),
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      if (_activeFilter != _TransactionFilter.personalExpenses)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${displayedList.length} movimiento${displayedList.length == 1 ? '' : 's'}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  _buildFilterChips(
+                    totalCount: monthIngresos.length +
+                        monthOperationalExpenses.length +
+                        monthPersonalExpenses.length,
+                    incomeCount: monthIngresos.length,
+                    operationalCount: monthOperationalExpenses.length,
+                    personalCount: monthPersonalExpenses.length,
+                  ),
+                  const SizedBox(height: 16),
+                  if (_activeFilter != _TransactionFilter.personalExpenses) ...[
+                    if (displayedList.isEmpty)
+                      _buildEmptyState(
+                        icon: _activeFilter == _TransactionFilter.incomes
+                            ? Icons.savings_outlined
+                            : (_activeFilter ==
+                                    _TransactionFilter.operationalExpenses
+                                ? Icons.storefront_outlined
+                                : Icons.receipt_long_outlined),
+                        title: _activeFilter == _TransactionFilter.all
+                            ? 'No hay sesiones cobradas ni gastos operativos en este mes.'
+                            : (_activeFilter == _TransactionFilter.incomes
+                                ? 'Sin ingresos registrados en este mes'
+                                : 'Sin gastos operativos registrados en este mes'),
+                        subtitle: _activeFilter == _TransactionFilter.incomes
+                            ? 'Registra sesiones a pacientes para visualizar ingresos aquí.'
+                            : 'Puedes registrar compras o gastos operativos correspondientes a este período.',
+                        actionLabel: _activeFilter == _TransactionFilter.incomes
+                            ? null
+                            : 'Agregar Gasto',
+                        onAction: _activeFilter == _TransactionFilter.incomes
+                            ? null
+                            : () => _showAddExpenseDialog(
+                                  initialCategory: 'Compra / Insumos',
+                                ),
+                      )
+                    else
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          side: BorderSide(
+                            color: theme.colorScheme.outlineVariant
+                                .withValues(alpha: 0.4),
+                          ),
+                        ),
+                        elevation: 0,
+                        color: theme.colorScheme.surfaceContainer,
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: displayedList.length,
+                          separatorBuilder: (context, index) => Divider(
+                            height: 1,
+                            indent: 72,
+                            color: theme.colorScheme.outlineVariant
+                                .withValues(alpha: 0.3),
+                          ),
+                          itemBuilder: (context, index) {
+                            final item = displayedList[index];
+                            final isExpense = item is Gasto;
+                            final String title = isExpense
+                                ? item.nombre
+                                : _resolvePatientName(item as Sesion);
+                            final String date = isExpense
+                                ? item.fecha
+                                : (item as Sesion).fecha;
+                            final double amount = isExpense
+                                ? item.monto
+                                : ((item as Sesion).precioCobrado ?? 0.0);
+                            final String description = isExpense
+                                ? (item.descripcion ?? '')
+                                : ((item as Sesion).notasSesion ??
+                                    item.observaciones ??
+                                    '');
+                            final String badgeText = isExpense
+                                ? (item.categoria ?? 'Operativo')
+                                : ((item as Sesion).tipo == 'corporal'
+                                    ? 'Sesión Corporal'
+                                    : 'Sesión Facial');
 
-              const SizedBox(height: 20),
+                            String formattedDate = date;
+                            try {
+                              final parsed = DateTime.parse(date);
+                              formattedDate =
+                                  DateFormat('yyyy-MM-dd').format(parsed);
+                            } catch (_) {}
+
+                            return ListTile(
+                              onTap: () => _showItemActions(item),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 4,
+                              ),
+                              leading: CircleAvatar(
+                                radius: 20,
+                                backgroundColor: isExpense
+                                    ? Colors.red.withValues(alpha: 0.12)
+                                    : Colors.green.withValues(alpha: 0.12),
+                                child: Icon(
+                                  isExpense
+                                      ? Icons.shopping_bag_outlined
+                                      : Icons.person_outline,
+                                  color: isExpense
+                                      ? Colors.red.shade700
+                                      : Colors.green.shade700,
+                                  size: 20,
+                                ),
+                              ),
+                              title: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isExpense
+                                          ? Colors.red.withValues(alpha: 0.1)
+                                          : Colors.green.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      badgeText,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: isExpense
+                                            ? Colors.red.shade800
+                                            : Colors.green.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Text(
+                                '$formattedDate${description.isNotEmpty ? " - $description" : ""}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Text(
+                                '${isExpense ? "-" : "+"}\$${amount.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: isExpense
+                                      ? Colors.red.shade700
+                                      : Colors.green.shade700,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+                  ],
 
               // 2. Renglón de Gastos Personales (totalizados para incorporarse a la contabilidad)
-              Card(
+              if (_activeFilter == _TransactionFilter.all ||
+                  _activeFilter == _TransactionFilter.personalExpenses) ...[
+                Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
@@ -918,8 +1016,8 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
+            ],
 
               // 3. Cuadre Final de Contabilidad (Totalización)
               Card(
@@ -984,6 +1082,204 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   ],
 );
 }
+
+  String _getSectionTitle(_TransactionFilter filter) {
+    switch (filter) {
+      case _TransactionFilter.all:
+        return 'Movimientos Contables del Mes (Sesiones e Insumos)';
+      case _TransactionFilter.incomes:
+        return 'Ingresos por Sesiones Cobradas';
+      case _TransactionFilter.operationalExpenses:
+        return 'Gastos Operativos e Insumos';
+      case _TransactionFilter.personalExpenses:
+        return 'Gastos Personales Registrados';
+    }
+  }
+
+  Widget _buildFilterChips({
+    required int totalCount,
+    required int incomeCount,
+    required int operationalCount,
+    required int personalCount,
+  }) {
+    final theme = Theme.of(context);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildFilterChip(
+            label: 'Todos ($totalCount)',
+            isSelected: _activeFilter == _TransactionFilter.all,
+            icon: Icons.layers_outlined,
+            selectedColor: theme.colorScheme.primary,
+            onSelected: () =>
+                setState(() => _activeFilter = _TransactionFilter.all),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Ingresos ($incomeCount)',
+            isSelected: _activeFilter == _TransactionFilter.incomes,
+            icon: Icons.arrow_downward_rounded,
+            selectedColor: Colors.green.shade700,
+            onSelected: () =>
+                setState(() => _activeFilter = _TransactionFilter.incomes),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Operativos ($operationalCount)',
+            isSelected: _activeFilter == _TransactionFilter.operationalExpenses,
+            icon: Icons.storefront_outlined,
+            selectedColor: Colors.red.shade600,
+            onSelected: () => setState(
+              () => _activeFilter = _TransactionFilter.operationalExpenses,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Personales ($personalCount)',
+            isSelected: _activeFilter == _TransactionFilter.personalExpenses,
+            icon: Icons.person_outline,
+            selectedColor: Colors.deepOrange.shade700,
+            onSelected: () => setState(
+              () => _activeFilter = _TransactionFilter.personalExpenses,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required IconData icon,
+    required Color selectedColor,
+    required VoidCallback onSelected,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      child: FilterChip(
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: isSelected ? Colors.white : selectedColor,
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
+          ),
+        ),
+        selected: isSelected,
+        onSelected: (_) => onSelected(),
+        selectedColor: selectedColor,
+        backgroundColor: theme.colorScheme.surfaceContainerHigh,
+        checkmarkColor: Colors.white,
+        showCheckmark: false,
+        side: BorderSide(
+          color: isSelected
+              ? selectedColor
+              : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: isSelected ? 1.5 : 1.0,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer.withValues(alpha: 0.5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36.0, horizontal: 24.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary
+                          .withValues(alpha: isDark ? 0.25 : 0.12),
+                      theme.colorScheme.primary.withValues(alpha: 0.04),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: 18),
+                FilledButton.tonalIcon(
+                  onPressed: onAction,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(actionLabel),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildClosingRow(
     String label,
@@ -1410,15 +1706,24 @@ class _MonthlyClosingDialogState extends ConsumerState<MonthlyClosingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final mesNombre = spanishMonthName(widget.month);
     return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
         children: [
-          Icon(
-            Icons.picture_as_pdf,
-            color: Theme.of(context).colorScheme.primary,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.picture_as_pdf,
+              color: theme.colorScheme.primary,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Flexible(
             child: Text('Cierre Contable - $mesNombre ${widget.year}'),
           ),
@@ -1429,43 +1734,96 @@ class _MonthlyClosingDialogState extends ConsumerState<MonthlyClosingDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Resumen de fin de mes con gastos personales totalizados e incorporados a la contabilidad:',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
-            _summaryLine(
-              '(+) Ingresos (${widget.ingresosCount} sesiones):',
-              '\$${widget.totalIncome.toStringAsFixed(2)}',
-              Colors.green.shade700,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Column(
+                children: [
+                  _summaryLine(
+                    '(+) Ingresos (${widget.ingresosCount} sesiones):',
+                    '\$${widget.totalIncome.toStringAsFixed(2)}',
+                    Colors.green.shade700,
+                  ),
+                  const SizedBox(height: 10),
+                  _summaryLine(
+                    '(-) Gastos Operativos (${widget.operationalExpensesCount}):',
+                    '\$${widget.subtotalOperationalExpenses.toStringAsFixed(2)}',
+                    Colors.red.shade600,
+                  ),
+                  const SizedBox(height: 10),
+                  _summaryLine(
+                    '(-) Renglón Gastos Personales (${widget.personalExpensesCount}):',
+                    '\$${widget.totalPersonalExpenses.toStringAsFixed(2)}',
+                    Colors.deepOrange.shade700,
+                    bold: true,
+                  ),
+                  const Divider(height: 24),
+                  _summaryLine(
+                    '(=) Total Gastos Incorporados:',
+                    '\$${widget.totalExpenses.toStringAsFixed(2)}',
+                    Colors.red.shade900,
+                    bold: true,
+                  ),
+                  const SizedBox(height: 10),
+                  _summaryLine(
+                    '(=) SALDO NETO DEL CIERRE:',
+                    '\$${widget.netBalance.toStringAsFixed(2)}',
+                    widget.netBalance >= 0
+                        ? Colors.blue.shade700
+                        : Colors.orange.shade800,
+                    bold: true,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            _summaryLine(
-              '(-) Gastos Operativos (${widget.operationalExpensesCount}):',
-              '\$${widget.subtotalOperationalExpenses.toStringAsFixed(2)}',
-              Colors.red.shade600,
-            ),
-            const SizedBox(height: 8),
-            _summaryLine(
-              '(-) Renglón Gastos Personales (${widget.personalExpensesCount}):',
-              '\$${widget.totalPersonalExpenses.toStringAsFixed(2)}',
-              Colors.deepOrange.shade700,
-              bold: true,
-            ),
-            const Divider(height: 24),
-            _summaryLine(
-              '(=) Total Gastos Incorporados:',
-              '\$${widget.totalExpenses.toStringAsFixed(2)}',
-              Colors.red.shade900,
-              bold: true,
-            ),
-            const SizedBox(height: 8),
-            _summaryLine(
-              '(=) SALDO NETO DEL CIERRE:',
-              '\$${widget.netBalance.toStringAsFixed(2)}',
-              widget.netBalance >= 0
-                  ? Colors.blue.shade700
-                  : Colors.orange.shade800,
-              bold: true,
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: widget.netBalance >= 0
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    widget.netBalance >= 0
+                        ? Icons.trending_up
+                        : Icons.trending_down,
+                    size: 18,
+                    color: widget.netBalance >= 0
+                        ? Colors.green.shade700
+                        : Colors.orange.shade800,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.netBalance >= 0
+                        ? 'Superávit Contable del Mes'
+                        : 'Déficit Contable del Mes',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: widget.netBalance >= 0
+                          ? Colors.green.shade700
+                          : Colors.orange.shade800,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1652,49 +2010,117 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isPersonal = _selectedCategory == 'Gastos Personales';
     return AlertDialog(
-      title: Text(
-        widget.gastoToEdit == null
-            ? (isPersonal ? 'Nuevo Gasto Personal' : 'Nuevo Gasto')
-            : 'Modificar Gasto',
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isPersonal
+                  ? Colors.deepOrange.withValues(alpha: 0.12)
+                  : theme.colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              isPersonal ? Icons.person_outline : Icons.shopping_bag_outlined,
+              color: isPersonal
+                  ? Colors.deepOrange.shade700
+                  : theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              widget.gastoToEdit == null
+                  ? (isPersonal ? 'Nuevo Gasto Personal' : 'Nuevo Gasto')
+                  : 'Modificar Gasto',
+            ),
+          ),
+        ],
       ),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Categoría / Tipo de Gasto:',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: _categories.map((c) {
+                  final isSelected = _selectedCategory == c;
+                  final isPersonalChip = c == 'Gastos Personales';
+                  return ChoiceChip(
+                    label: Text(
+                      c,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? (isPersonalChip
+                                ? Colors.white
+                                : theme.colorScheme.onPrimaryContainer)
+                            : null,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedColor: isPersonalChip
+                        ? Colors.deepOrange.shade700
+                        : theme.colorScheme.primaryContainer,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _selectedCategory = c);
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _nombreController,
-                decoration: const InputDecoration(labelText: 'Concepto / Nombre'),
+                decoration: InputDecoration(
+                  labelText: 'Concepto / Nombre',
+                  prefixIcon: const Icon(Icons.edit_note),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 validator: (v) =>
                     v == null || v.trim().isEmpty ? 'Requerido' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               TextFormField(
                 controller: _descripcionController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Categoría / Renglón',
+                decoration: InputDecoration(
+                  labelText: 'Descripción',
+                  prefixIcon: const Icon(Icons.notes),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                items: _categories.map((c) {
-                  return DropdownMenuItem(value: c, child: Text(c));
-                }).toList(),
-                onChanged: (v) {
-                  if (v != null) {
-                    setState(() => _selectedCategory = v);
-                  }
-                },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               TextFormField(
                 controller: _montoController,
-                decoration: const InputDecoration(labelText: 'Monto (\$)'),
+                decoration: InputDecoration(
+                  labelText: 'Monto (\$)',
+                  prefixIcon: const Icon(Icons.attach_money),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -1706,19 +2132,29 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Fecha: ${DateFormat('yyyy-MM-dd').format(_selectedDate)}',
+              const SizedBox(height: 14),
+              InkWell(
+                onTap: () => _selectDate(context),
+                borderRadius: BorderRadius.circular(12),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Fecha del Gasto',
+                    prefixIcon: const Icon(Icons.calendar_today_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => _selectDate(context),
-                    child: const Text('Cambiar'),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        DateFormat('yyyy-MM-dd').format(_selectedDate),
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const Icon(Icons.arrow_drop_down, size: 20),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
           ),

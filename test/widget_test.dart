@@ -391,6 +391,43 @@ void main() {
         expect(find.text('Descargar Excel (Gastos y Compras)'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      '6. Permite filtrar movimientos por Chips (Todos, Ingresos, Operativos, Personales)',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              apiClientProvider.overrideWithValue(fakeApi),
+            ],
+            child: const MaterialApp(
+              home: AccountingScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // En "Todos", vemos Carolina Herrera (ingreso) y Ampollas Vitamina C (gasto operativo)
+        expect(find.textContaining('Carolina Herrera'), findsWidgets);
+        expect(find.text('Ampollas Vitamina C'), findsOneWidget);
+
+        // Filtrar por "Ingresos"
+        await tester.ensureVisible(find.textContaining('Ingresos (1)'));
+        await tester.tap(find.textContaining('Ingresos (1)'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Carolina Herrera'), findsWidgets);
+        expect(find.text('Ampollas Vitamina C'), findsNothing);
+
+        // Filtrar por "Operativos"
+        await tester.ensureVisible(find.textContaining('Operativos (1)'));
+        await tester.tap(find.textContaining('Operativos (1)'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Ampollas Vitamina C'), findsOneWidget);
+        expect(find.textContaining('Carolina Herrera'), findsNothing);
+      },
+    );
   });
 
   group('AutoUpdaterService - Verificación de versión y assets', () {
